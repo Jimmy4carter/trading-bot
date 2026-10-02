@@ -1,0 +1,49 @@
+{
+  "version": "2.0-synaptic",
+  "last_saved": "2026-10-02 21:11:13",
+  "ai_level": 1,
+  "ai_iq": 133.7,
+  "total_experience_points": 75,
+  "total_epochs": 1,
+  "post_mortems_analyzed": 0,
+  "current_regime": "CHOP_ACCUMULATION",
+  "regime_transitions": {
+    "BULL_TREND": {
+      "BULL_TREND": 1,
+      "BEAR_TREND": 1,
+      "CHOP_ACCUMULATION": 1,
+      "HIGH_VOL_EXPLOSION": 1,
+      "LIQUIDITY_CAVITATION": 1
+    },
+    "BEAR_TREND": {
+      "BULL_TREND": 1,
+      "BEAR_TREND": 1,
+      "CHOP_ACCUMULATION": 1,
+      "HIGH_VOL_EXPLOSION": 1,
+      "LIQUIDITY_CAVITATION": 1
+    },
+    "CHOP_ACCUMULATION": {
+      "BULL_TREND": 1,
+      "BEAR_TREND": 1,
+      "CHOP_ACCUMULATION": 1,
+      "HIGH_VOL_EXPLOSION": 1,
+      "LIQUIDITY_CAVITATION": 1
+    },
+    "HIGH_VOL_EXPLOSION": {
+      "BULL_TREND": 1,
+      "BEAR_TREND": 1,
+      "CHOP_ACCUMULATION": 1,
+      "HIGH_VOL_EXPLOSION": 1,
+      "LIQUIDITY_CAVITATION": 1
+    },
+    "LIQUIDITY_CAVITATION": {
+      "BULL_TREND": 1,
+      "BEAR_TREND": 1,
+      "CHOP_ACCUMULATION": 1,
+      "HIGH_VOL_EXPLOSION": 1,
+      "LIQUIDITY_CAVITATION": 1
+    }
+  },
+  "distilled_insights": [],
+  "top_formula": "math.tanh(v_price * 2.0) - (viscosity * 0.5)"
+}

@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: trading_bot_redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes", "--save", "60", "1"]
+    volumes:
+      - redis_data:/data
+      - redis_socket:/var/run/redis
+    networks:
+      - bot_network
+
+  bot:
+    build: .
+    container_name: trading_bot_engine
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - ./data:/app/data
+      - redis_socket:/var/run/redis
+    ports:
+      - "8000:8000"
+    depends_on:
+      - redis
+    networks:
+      - bot_network
+
+volumes:
+  redis_data:
+  redis_socket:
+
+networks:
+  bot_network:
+    driver: bridge

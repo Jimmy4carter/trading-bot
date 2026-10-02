@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QuantumBit BHR | Autonomous Trading Engine</title>
+    <!-- Google Fonts: Inter & JetBrains Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <!-- Auth Modal (Shown if not logged in) -->
+    <div id="authModal" class="modal-overlay">
+        <div class="modal-card">
+            <div class="brand-badge">BHR AI ENGINE</div>
+            <h2>Admin Authentication</h2>
+            <p class="subtitle">Secure terminal login for Hetzner VPS instance</p>
+            <form id="loginForm" onsubmit="handleLogin(event)">
+                <div class="input-group">
+                    <label for="usernameInput">Username</label>
+                    <input type="text" id="usernameInput" required placeholder="admin">
+                </div>
+                <div class="input-group">
+                    <label for="passwordInput">Password</label>
+                    <input type="password" id="passwordInput" required placeholder="••••••••">
+                </div>
+                <button type="submit" id="loginSubmitBtn" class="btn-primary">Unlock Terminal</button>
+                <div id="loginError" class="error-msg"></div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Main Navigation Bar -->
+    <nav class="navbar">
+        <div class="nav-brand">
+            <div class="pulse-ring"></div>
+            <div class="brand-text">
+                <span class="brand-title">QUANTUM<span class="gradient-text">BHR</span></span>
+                <span class="brand-subtitle">Autonomous Self-Improving Engine</span>
+            </div>
+        </div>
+        
+        <div class="nav-controls">
+            <!-- Mode Pill -->
+            <div id="modePill" class="status-pill pill-demo">
+                <span class="pill-dot"></span>
+                <span id="modeText">TRUE PAPER TRADING</span>
+            </div>
+            <!-- Active Broker Pill -->
+            <div id="brokerPill" class="status-pill pill-broker">
+                <span id="brokerText">BYBIT</span>
+            </div>
+            <!-- Logout Button -->
+            <button id="logoutBtn" class="btn-ghost" onclick="handleLogout()">Lock</button>
+        </div>
+    </nav>
+
+    <!-- Main Content Container -->
+    <main class="container">
+        <!-- Telemetry & Metrics Row -->
+        <section class="metrics-grid">
+            <div class="metric-card glass-panel">
+                <div class="metric-header">
+                    <span class="metric-label">Total Portfolio Equity</span>
+                    <span class="metric-icon">💰</span>
+                </div>
+                <div class="metric-value" id="balanceValue">$10.00</div>
+                <div class="metric-sub" id="balanceSub">Available Cash: $10.00</div>
+            </div>
+
+            <div class="metric-card glass-panel">
+                <div class="metric-header">
+                    <span class="metric-label">Net Realized PnL</span>
+                    <span class="metric-icon">📈</span>
+                </div>
+                <div class="metric-value pnl-neutral" id="pnlValue">+$0.00</div>
+                <div class="metric-sub" id="pnlSub">Fees: $0.00 | Avg: 0.0%</div>
+            </div>
+
+            <div class="metric-card glass-panel">
+                <div class="metric-header">
+                    <span class="metric-label">AI Win Rate</span>
+                    <span class="metric-icon">🎯</span>
+                </div>
+                <div class="metric-value" id="winRateValue">0.0%</div>
+                <div class="metric-sub" id="winRateSub">0 Wins / 0 Total Trades</div>
+            </div>
+
+            <div class="metric-card glass-panel">
+                <div class="metric-header">
+                    <span class="metric-label">Active Positions</span>
+                    <span class="metric-icon">⚡</span>
+                </div>
+                <div class="metric-value" id="openCountValue">0 / 3</div>
+                <div class="metric-sub" id="engineStatusSub">Engine: Scanning Live Feeds</div>
+            </div>
+        </section>
+
+        <!-- Frontier Neural Physics & Entropy Matrix -->
+        <section class="panel glass-panel frontier-panel">
+            <div class="panel-header">
+                <div>
+                    <h3>Frontier Neural Physics & Entropy Matrix</h3>
+                    <span class="brand-subtitle">Wolfram Rule 110 Gliders • Navier-Stokes Hydraulics • 1024-bit HDC • AlphaZero Adversary • Shannon Entropy</span>
+                </div>
+                <span class="badge" style="background: rgba(99, 102, 241, 0.2); color: #818cf8; border: 1px solid rgba(99, 102, 241, 0.4);">
+                    Sub-Millisecond CPU Physics
+                </span>
+            </div>
+
+            <div class="frontier-grid">
+                <!-- 1. Rule 110 Gliders -->
+                <div class="frontier-card">
+                    <div class="frontier-title">
+                        <span>Rule 110 Glider Lattice</span>
+                        <span class="badge" id="gliderStatusBadge" style="color: #10b981;">COHERENT</span>
+                    </div>
+                    <div class="frontier-desc">Turing-complete spatial chaos filter</div>
+                    <div class="frontier-meter">
+                        <div class="frontier-meter-bar" id="gliderMeter" style="width: 78%; background: #10b981;"></div>
+                    </div>
+                    <div class="frontier-stat">Coherence: <strong id="gliderVal">0.78</strong> (Anti-Chop)</div>
+                </div>
+
+                <!-- 2. Navier-Stokes Hydraulics -->
+                <div class="frontier-card">
+                    <div class="frontier-title">
+                        <span>Liquidity Hydraulics (μ)</span>
+                        <span class="badge" id="viscosityBadge" style="color: #6366f1;">LAMINAR</span>
+                    </div>
+                    <div class="frontier-desc">Order book fluid viscosity & cavitation</div>
+                    <div class="frontier-meter">
+                        <div class="frontier-meter-bar" id="viscosityMeter" style="width: 45%; background: #6366f1;"></div>
+                    </div>
+                    <div class="frontier-stat">Viscosity: <strong id="viscosityVal">0.92 μ</strong> (Vacuum Ready)</div>
+                </div>
+
+                <!-- 3. 1,024-bit HDC Brain -->
+                <div class="frontier-card">
+                    <div class="frontier-title">
+                        <span>1,024-bit HDC Memory</span>
+                        <span class="badge" style="color: #a855f7;">ONLINE</span>
+                    </div>
+                    <div class="frontier-desc">Hyperdimensional associative neocortex</div>
+                    <div class="frontier-meter">
+                        <div class="frontier-meter-bar" style="width: 100%; background: #a855f7;"></div>
+                    </div>
+                    <div class="frontier-stat">Dimension: <strong>1,024 bits</strong> (AVX2 Speed)</div>
+                </div>
+
+                <!-- 4. Cross-Asset Shannon Entropy -->
+                <div class="frontier-card">
+                    <div class="frontier-title">
+                        <span>Entropy Wave Collapse</span>
+                        <span class="badge" id="entropyBadge" style="color: #f59e0b;">MONITORING</span>
+                    </div>
+                    <div class="frontier-desc">Joint multi-pair capital rotation wave</div>
+                    <div class="frontier-meter">
+                        <div class="frontier-meter-bar" id="entropyMeter" style="width: 74%; background: #f59e0b;"></div>
+                    </div>
+                    <div class="frontier-stat">Joint Entropy: <strong id="entropyVal">0.74 bits</strong></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Synaptic Mini-AI Learning Core & Neuro-Symbolic Gene Pool -->
+        <section class="panel glass-panel synaptic-panel" style="margin-bottom: 24px; border: 1px solid rgba(168, 85, 247, 0.3); background: rgba(18, 14, 28, 0.65);">
+            <div class="panel-header">
+                <div>
+                    <h3 style="color: #c084fc;">Synaptic Mini-AI Learning Core & Formula Gene Pool</h3>
+                    <span class="brand-subtitle">Continuous Lifelong Learning • Neuro-Symbolic Formula Evolution • Markov Regime Transitions • Counterfactual Replays</span>
+                </div>
+                <div style="display: flex; gap: 8px;">
+                    <button class="btn btn-secondary" onclick="triggerDistillation()" style="padding: 6px 12px; font-size: 12px; border-color: rgba(168, 85, 247, 0.4); color: #c084fc;">
+                        🧪 Trigger Replay Distillation
+                    </button>
+                    <button class="btn btn-secondary" onclick="triggerCheckpoint()" style="padding: 6px 12px; font-size: 12px; border-color: rgba(168, 85, 247, 0.4); color: #c084fc;">
+                        💾 Save Brain Snapshot
+                    </button>
+                </div>
+            </div>
+
+            <!-- AI Cognitive Stats Banner -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 20px;">
+                <div class="frontier-card" style="border-color: rgba(168, 85, 247, 0.25);">
+                    <div class="frontier-title">
+                        <span>AI Cognitive Rank</span>
+                        <span class="badge" id="aiLevelBadge" style="background: rgba(168, 85, 247, 0.2); color: #d8b4fe;">Level 3</span>
+                    </div>
+                    <div class="frontier-desc">Lifelong Synaptic Experience</div>
+                    <div class="frontier-stat"><strong id="aiIqText" style="font-size: 20px; color: #f3e8ff;">IQ 128.5</strong></div>
+                </div>
+
+                <div class="frontier-card" style="border-color: rgba(168, 85, 247, 0.25);">
+                    <div class="frontier-title">
+                        <span>Experience Points (XP)</span>
+                        <span class="badge" id="aiXpBadge" style="color: #38bdf8;">Active</span>
+                    </div>
+                    <div class="frontier-desc">Progress toward next IQ evolution</div>
+                    <div class="frontier-meter" style="margin-top: 8px;">
+                        <div class="frontier-meter-bar" id="aiXpMeter" style="width: 65%; background: linear-gradient(90deg, #a855f7, #38bdf8);"></div>
+                    </div>
+                    <div class="frontier-stat">Total: <strong id="aiXpText">480 XP</strong></div>
+                </div>
+
+                <div class="frontier-card" style="border-color: rgba(168, 85, 247, 0.25);">
+                    <div class="frontier-title">
+                        <span>Post-Mortems Crystallized</span>
+                        <span class="badge" style="color: #34d399;">Zero Forget</span>
+                    </div>
+                    <div class="frontier-desc">Mistakes internalized & mitigated</div>
+                    <div class="frontier-stat">Lessons: <strong id="aiPostMortemsText">12 Analyzed</strong></div>
+                </div>
+
+                <div class="frontier-card" style="border-color: rgba(168, 85, 247, 0.25);">
+                    <div class="frontier-title">
+                        <span>Current Market Regime</span>
+                        <span class="badge" id="currentRegimeBadge" style="color: #fbbf24;">TRANSITION</span>
+                    </div>
+                    <div class="frontier-desc">Markov synaptic state classifier</div>
+                    <div class="frontier-stat">State: <strong id="currentRegimeText">BULL_TREND</strong></div>
+                </div>
+            </div>
+
+            <!-- Two-Column Grid: Discovered Formulas & Counterfactual Learning Log -->
+            <div style="display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 16px;">
+                <!-- Left: Evolved Symbolic Formulas -->
+                <div style="background: rgba(0,0,0,0.3); border-radius: 8px; padding: 14px; border: 1px solid rgba(255,255,255,0.06);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <h4 style="font-size: 13px; text-transform: uppercase; color: #cbd5e1; letter-spacing: 0.5px;">Evolved Symbolic Formulas (Alpha Gene Pool)</h4>
+                        <span class="badge" style="font-size: 10px; color: #a855f7;">Auto-Bred</span>
+                    </div>
+                    <div style="overflow-x: auto;">
+                        <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
+                            <thead>
+                                <tr style="color: #94a3b8; border-bottom: 1px solid rgba(255,255,255,0.08); text-align: left;">
+                                    <th style="padding: 6px;">Formula Expression</th>
+                                    <th style="padding: 6px;">Win Rate</th>
+                                    <th style="padding: 6px;">Fitness</th>
+                                    <th style="padding: 6px;">Gen</th>
+                                </tr>
+                            </thead>
+                            <tbody id="symbolicFormulasTbody">
+                                <tr><td colspan="4" style="text-align: center; color: #64748b; padding: 12px;">Synthesizing mathematical formulas...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Right: Counterfactual Post-Mortem & Memory Feed -->
+                <div style="background: rgba(0,0,0,0.3); border-radius: 8px; padding: 14px; border: 1px solid rgba(255,255,255,0.06);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <h4 style="font-size: 13px; text-transform: uppercase; color: #cbd5e1; letter-spacing: 0.5px;">Continuous Self-Distillation Memory</h4>
+                        <span class="badge" style="font-size: 10px; color: #10b981;">Persistent Vault</span>
+                    </div>
+                    <div id="synapticInsightsList" style="display: flex; flex-direction: column; gap: 8px; max-height: 180px; overflow-y: auto; font-size: 11px;">
+                        <div style="color: #64748b; text-align: center; padding: 12px;">Awaiting first distillation cycle...</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Command & Control Matrix -->
+        <section class="control-grid">
+
+            <!-- Left Panel: Execution & Risk Management -->
+            <div class="panel glass-panel">
+                <div class="panel-header">
+                    <h3>Execution & Risk Controller</h3>
+                    <span class="badge">Real-time</span>
+                </div>
+
+                <div class="control-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="execModeSelect">Execution Mode</label>
+                            <select id="execModeSelect" onchange="updateSettings()">
+                                <option value="demo">True Paper (Live Data / Safe)</option>
+                                <option value="live">Live Trading (Real Capital)</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="activeBrokerSelect">Active Broker</label>
+                            <select id="activeBrokerSelect" onchange="updateSettings()">
+                                <option value="bybit">Bybit (Spot / Micro-Orders)</option>
+                                <option value="binance">Binance (Deep Liquidity)</option>
+                                <option value="oanda">OANDA (Forex & Metals)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Sliders -->
+                    <div class="slider-group">
+                        <div class="slider-header">
+                            <label for="maxConcurrentRange">Max Concurrent Positions</label>
+                            <span id="maxConcurrentVal" class="slider-badge">3</span>
+                        </div>
+                        <input type="range" id="maxConcurrentRange" min="1" max="10" value="3" oninput="updateSliderVal('maxConcurrentRange', 'maxConcurrentVal')" onchange="updateSettings()">
+                    </div>
+
+                    <div class="slider-group">
+                        <div class="slider-header">
+                            <label for="tradeSizeRange">Trade Allocation ($ USD)</label>
+                            <span id="tradeSizeVal" class="slider-badge">$10.00</span>
+                        </div>
+                        <input type="range" id="tradeSizeRange" min="5" max="100" step="1" value="10" oninput="updateSliderVal('tradeSizeRange', 'tradeSizeVal', '$')" onchange="updateSettings()">
+                    </div>
+
+                    <div class="slider-group">
+                        <div class="slider-header">
+                            <label for="confidenceRange">AI Confidence Strictness (Q-Gate)</label>
+                            <span id="confidenceVal" class="slider-badge">65%</span>
+                        </div>
+                        <input type="range" id="confidenceRange" min="50" max="95" step="5" value="65" oninput="updateSliderVal('confidenceRange', 'confidenceVal', '', '%')" onchange="updateSettings()">
+                    </div>
+
+                    <!-- Quick Actions -->
+                    <div class="button-row">
+                        <button id="bootstrapBtn" class="btn-secondary" onclick="triggerBootstrap()">🚀 Re-Seed Historical DNA</button>
+                        <button id="killSwitchBtn" class="btn-danger" onclick="emergencyCloseAll()">🛑 Emergency Close All</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Panel: Watchlist & Multi-Asset Router -->
+            <div class="panel glass-panel">
+                <div class="panel-header">
+                    <h3>Active Watchlist & Router</h3>
+                    <span class="badge" id="watchlistCount">5 Pairs</span>
+                </div>
+
+                <div class="add-pair-box">
+                    <input type="text" id="newSymbolInput" placeholder="Symbol (e.g. SOL/USDT, XAU_USD)">
+                    <select id="newClassSelect">
+                        <option value="crypto">Crypto</option>
+                        <option value="forex">Forex</option>
+                    </select>
+                    <select id="newBrokerSelect">
+                        <option value="bybit">Bybit</option>
+                        <option value="binance">Binance</option>
+                        <option value="oanda">OANDA</option>
+                    </select>
+                    <button id="addPairBtn" class="btn-primary" onclick="handleAddPair()">Inject Pair</button>
+                </div>
+
+                <div class="table-container">
+                    <table class="data-table" id="watchlistTable">
+                        <thead>
+                            <tr>
+                                <th>Symbol</th>
+                                <th>Class</th>
+                                <th>Broker</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="watchlistBody">
+                            <!-- Populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- Live Positions Section -->
+        <section class="panel glass-panel table-panel">
+            <div class="panel-header">
+                <h3>Live Monitored Positions (Event-Driven Exit Daemon)</h3>
+                <span class="badge" id="livePosCountBadge">0 Active</span>
+            </div>
+            <div class="table-container">
+                <table class="data-table" id="positionsTable">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Symbol</th>
+                            <th>Side</th>
+                            <th>Entry Price</th>
+                            <th>Peak Reached</th>
+                            <th>Size</th>
+                            <th>Duration</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="positionsBody">
+                        <tr>
+                            <td colspan="8" class="text-center text-muted">No positions currently open. AI scanning market fingerprints...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Trade Audit Ledger Section -->
+        <section class="panel glass-panel table-panel">
+            <div class="panel-header">
+                <h3>Immutable Trade Ledger (SQLite WAL)</h3>
+                <span class="badge">Closed Trades</span>
+            </div>
+            <div class="table-container">
+                <table class="data-table" id="historyTable">
+                    <thead>
+                        <tr>
+                            <th>Time</th>
+                            <th>Symbol</th>
+                            <th>Side</th>
+                            <th>Entry</th>
+                            <th>Exit</th>
+                            <th>Duration</th>
+                            <th>Net Profit</th>
+                            <th>Exit Reason</th>
+                        </tr>
+                    </thead>
+                    <tbody id="historyBody">
+                        <!-- Populated dynamically -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="toast"></div>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>

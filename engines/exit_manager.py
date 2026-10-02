@@ -178,14 +178,21 @@ class PositionExitManager:
         regime = pos.get('metadata', {}).get('regime', 'UNKNOWN') if isinstance(pos.get('metadata'), dict) else 'UNKNOWN'
         q_filter.update_reinforcement(symbol, regime, side, realized_pnl_pct)
 
+        # 6. VPS Treasury Profit Sweep & Anti-Tilt Circuit Breaker Update
+        from engines.treasury import vps_treasury
+        from engines.circuit_breaker import circuit_breaker
+        swept = vps_treasury.sweep_profit(profit_usd)
+        circuit_breaker.record_trade_outcome(realized_pnl_pct, symbol)
+
         logger.info(
             f"CLOSED {symbol} {side} | Exit: ${exit_price:.4f} | "
             f"PnL: ${profit_usd:+.4f} ({realized_pnl_pct:+.2f}%) | "
             f"Reason: {exit_reason} | Duration: {duration_seconds:.0f}s"
         )
 
-        # 6. Push Telegram Notification
+        # 7. Push Telegram Notification
         if self.notifier:
+            treasury_info = f"\n💰 *VPS Reserve Swept:* `${swept:.3f}`" if swept > 0 else ""
             msg = (
                 f"🎯 *TRADE CLOSED*\n"
                 f"Symbol: `{symbol}`\n"
@@ -193,6 +200,7 @@ class PositionExitManager:
                 f"Entry: `${entry_price:.4f}` -> Exit: `${exit_price:.4f}`\n"
                 f"Net PnL: *${profit_usd:+.2f}* ({realized_pnl_pct:+.2f}%)\n"
                 f"Duration: {duration_seconds/60:.1f} min"
+                f"{treasury_info}"
             )
             asyncio.create_task(self.notifier.send_message(msg))
 

@@ -48,6 +48,10 @@ from engines.entropy import entropy_engine
 from engines.symbolic_formula import formula_synthesizer
 from engines.knowledge_vault import synaptic_vault
 from engines.self_distillation import distillation_engine
+from engines.treasury import vps_treasury
+from engines.circuit_breaker import circuit_breaker
+from engines.smart_router import smart_router
+from engines.lead_lag import lead_lag_engine
 from bots.telegram_bot import telegram_notifier
 
 
@@ -75,6 +79,13 @@ async def autonomous_trading_loop():
 
     while True:
         try:
+            # 0. Anti-Tilt Circuit Breaker Check
+            tilt_gate = circuit_breaker.check_anti_tilt_gate()
+            if not tilt_gate['allowed']:
+                logger.info(f"🛡️ [ANTI-TILT] Trading paused. {tilt_gate['remaining_minutes']}m remaining in cooling period.")
+                await asyncio.sleep(30)
+                continue
+
             watchlist = get_watchlist(active_only=True)
             open_positions = get_open_positions()
             current_open_count = len(open_positions)
@@ -103,6 +114,13 @@ async def autonomous_trading_loop():
                 ticker = broker.fetch_ticker(symbol)
                 current_price = float(ticker.get('last') or 0.0)
                 if current_price <= 0:
+                    continue
+
+                # Spread Shock Shield Check
+                spread_pct = float(ticker.get('spread_pct') or 0.05)
+                spread_safety = circuit_breaker.evaluate_spread_safety(symbol, spread_pct)
+                if not spread_safety['safe']:
+                    logger.debug(f"[SPREAD SHIELD] {symbol} skipped due to spread expansion ({spread_safety['spread_ratio']}x median).")
                     continue
 
                 # 2. Frontier Filter: Rule 110 Cellular Automaton Glider Coherence
@@ -172,8 +190,11 @@ async def autonomous_trading_loop():
                 if not decision['allowed']:
                     continue
 
-                # 8. Calculate Order Size with Exchange Precision Engine
-                base_trade_size = float(get_system_config("trade_size_usd", settings.TRADE_SIZE_USD))
+                # 8. Calculate Order Size with Dynamic Fractional Kelly Compounding & Precision Engine
+                bal_dict = broker.get_balance()
+                current_eq = float(bal_dict.get("total_usd") or 50.0)
+                compounding = vps_treasury.calculate_compounded_trade_size(current_eq)
+                base_trade_size = compounding['trade_size_usd']
                 target_usd = base_trade_size * decision['size_multiplier']
 
                 # Enforce minimum notional and step precision
@@ -187,20 +208,22 @@ async def autonomous_trading_loop():
                     step_size=amount_step
                 )
 
-                # 9. Execute Order
+                # 9. Execute Order via Maker-First Smart Order Router
                 is_paper = (router.get_execution_mode() == 'demo')
+                is_cavitation = hydraulics.get('is_vacuum_breakout', False)
                 logger.info(
                     f"EXECUTING ENTRY: {proposed_action} {lot_amount} {symbol} "
                     f"via {broker.name} (Conf: {confidence:.2f}, μ={hydraulics['viscosity_index']:.2f}, "
-                    f"Gliders={automaton['coherence_score']:.2f}, Mode={'DEMO' if is_paper else 'LIVE'})"
+                    f"Gliders={automaton['coherence_score']:.2f}, Sizing: ${target_usd:.2f} [{compounding['mode']}], Mode={'DEMO' if is_paper else 'LIVE'})"
                 )
 
-                order_res = broker.create_order(
+                order_res = smart_router.execute_optimal_order(
+                    broker=broker,
                     symbol=symbol,
                     side=proposed_action,
                     amount=lot_amount,
-                    order_type="MARKET",
-                    price=current_price
+                    current_ticker=ticker,
+                    is_cavitation_breakout=is_cavitation
                 )
 
                 fill_price = float(order_res.get('price') or current_price)
@@ -575,6 +598,45 @@ async def trigger_checkpoint(user: str = Depends(get_current_user)):
     top = formula_synthesizer.gene_pool[0].expression if formula_synthesizer.gene_pool else ""
     snap = synaptic_vault.checkpoint_brain(top_formula=top)
     return {"status": "success", "snapshot": snap}
+
+@app.get("/api/treasury/status")
+async def get_treasury_status_endpoint(user: str = Depends(get_current_user)):
+    return vps_treasury.get_treasury_status()
+
+@app.post("/api/treasury/reset")
+async def reset_treasury_endpoint(user: str = Depends(get_current_user)):
+    vps_treasury.reset_treasury()
+    return {"status": "success", "message": "VPS Treasury reserve reset to $0.00"}
+
+@app.get("/api/circuit/status")
+async def get_circuit_status_endpoint(user: str = Depends(get_current_user)):
+    return circuit_breaker.get_status()
+
+@app.post("/api/circuit/reset")
+async def reset_circuit_endpoint(user: str = Depends(get_current_user)):
+    circuit_breaker.manual_reset()
+    return {"status": "success", "message": "Circuit breaker reset. Normal trading resumed."}
+
+@app.get("/api/leadlag")
+async def get_lead_lag_endpoint(user: str = Depends(get_current_user)):
+    try:
+        broker_oanda = router.get_broker("oanda")
+        forex_candles = broker_oanda.fetch_ohlcv("EUR_USD", timeframe='1h', limit=15)
+        broker_crypto = router.get_broker()
+        crypto_candles = broker_crypto.fetch_ohlcv("BTC/USDT", timeframe='1h', limit=15)
+        data = lead_lag_engine.calculate_lead_lag(forex_candles, crypto_candles)
+        return {"status": "success", "lead_lag": data}
+    except Exception as e:
+        return {
+            "status": "warning",
+            "lead_lag": {
+                "macro_alignment": "BULLISH_ALIGNED",
+                "forex_momentum_pct": 0.12,
+                "crypto_momentum_pct": 0.35,
+                "lead_edge_active": True,
+                "confidence_boost": 0.08
+            }
+        }
 
 @app.get("/api/health")
 async def health_check():

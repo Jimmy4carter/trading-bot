@@ -96,6 +96,46 @@
                 <div class="metric-value" id="openCountValue">0 / 3</div>
                 <div class="metric-sub" id="engineStatusSub">Engine: Scanning Live Feeds</div>
             </div>
+
+            <div class="metric-card glass-panel" style="border: 1px solid rgba(245, 158, 11, 0.3);">
+                <div class="metric-header">
+                    <span class="metric-label" style="color: #fbbf24;">VPS Cloud Treasury</span>
+                    <span class="badge" id="vpsFundedBadge" style="background: rgba(245, 158, 11, 0.2); color: #fbbf24;">0%</span>
+                </div>
+                <div class="metric-value" id="vpsReserveVal" style="color: #fef3c7;">$0.00 / $4.50</div>
+                <div class="metric-sub" id="vpsReserveSub">Sweeping 15% of profits for Hetzner</div>
+                <div class="frontier-meter" style="margin-top: 6px; height: 4px;">
+                    <div class="frontier-meter-bar" id="vpsReserveMeter" style="width: 0%; background: #fbbf24;"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Owner Guardrails & Circuit Breaker Ribbon -->
+        <section class="panel glass-panel" style="margin-bottom: 20px; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(56, 189, 248, 0.25);">
+            <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="font-size: 14px;">🛡️</span>
+                    <span style="font-weight: 600; font-size: 13px; color: #f8fafc;">Anti-Tilt & Spread Shield:</span>
+                    <span class="badge" id="circuitBadge" style="background: rgba(16, 185, 129, 0.2); color: #34d399;">ACTIVE (NORMAL)</span>
+                </div>
+                <div style="font-size: 12px; color: #94a3b8;">
+                    Spread: <strong id="spreadRatioText" style="color: #38bdf8;">1.0x Median</strong>
+                </div>
+                <div style="font-size: 12px; color: #94a3b8;">
+                    Consecutive Losses: <strong id="consecutiveLossesText" style="color: #f87171;">0 / 2</strong>
+                </div>
+                <div style="font-size: 12px; color: #94a3b8;">
+                    Macro Forex Pulse: <strong id="macroAlignmentText" style="color: #a78bfa;">BULLISH_ALIGNED</strong>
+                </div>
+            </div>
+            <div style="display: flex; gap: 8px;">
+                <button class="btn btn-secondary" onclick="resetCircuitBreaker()" style="padding: 4px 10px; font-size: 11px; border-color: rgba(56, 189, 248, 0.3); color: #38bdf8;">
+                    🔄 Reset Tilt Gate
+                </button>
+                <button class="btn btn-secondary" onclick="resetVPSTreasury()" style="padding: 4px 10px; font-size: 11px; border-color: rgba(245, 158, 11, 0.3); color: #fbbf24;">
+                    💳 Reset Monthly VPS
+                </button>
+            </div>
         </section>
 
         <!-- Frontier Neural Physics & Entropy Matrix -->

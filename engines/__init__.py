@@ -10,6 +10,10 @@ from .entropy import EntropyWaveCollapseEngine, entropy_engine
 from .symbolic_formula import NeuroSymbolicFormulaSynthesizer, formula_synthesizer
 from .knowledge_vault import SynapticKnowledgeVault, synaptic_vault
 from .self_distillation import SelfDistillationEngine, distillation_engine
+from .treasury import VPSTreasuryAndCompounding, vps_treasury
+from .circuit_breaker import AntiTiltAndSpreadShield, circuit_breaker
+from .smart_router import SmartOrderRouter, smart_router
+from .lead_lag import MacroLeadLagEngine, lead_lag_engine
 
 __all__ = [
     "MarketFingerprintGenerator",
@@ -35,5 +39,13 @@ __all__ = [
     "synaptic_vault",
     "SelfDistillationEngine",
     "distillation_engine",
+    "VPSTreasuryAndCompounding",
+    "vps_treasury",
+    "AntiTiltAndSpreadShield",
+    "circuit_breaker",
+    "SmartOrderRouter",
+    "smart_router",
+    "MacroLeadLagEngine",
+    "lead_lag_engine",
 ]
 

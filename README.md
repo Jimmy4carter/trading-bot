@@ -171,6 +171,7 @@ Comprehensive technical, algorithmic, and operational documentation is located i
 | [08. Deployment & Operations](file:///c:/Users/User/Documents/GitHub/trading-bot/docs/08_deployment_and_operations.md) | Hetzner Cloud CX22 Ubuntu provisioning, Docker Compose, Caddy HTTPS reverse proxy. |
 | [09. Platform Onboarding & API Setup](file:///c:/Users/User/Documents/GitHub/trading-bot/docs/09_platform_onboarding_and_api_setup.md) | Comprehensive account registration, KYC verification, API key setup for Bybit, Binance, OANDA, Telegram, and Hetzner VPS. |
 | [10. Synaptic Mini-AI & Lifelong Learning](file:///c:/Users/User/Documents/GitHub/trading-bot/docs/10_synaptic_mini_ai_and_lifelong_learning.md) | Cognitive IQ and XP progression, Neuro-Symbolic formula evolution, Markov regime transitions, and counterfactual distillation. |
+| [11. Owner Safeguards: Treasury & Circuit Breakers](file:///c:/Users/User/Documents/GitHub/trading-bot/docs/11_treasury_circuit_breakers_and_smart_routing.md) | VPS Self-Funding Treasury ($4.50 Hetzner target), Fractional Kelly compounding, Anti-Tilt circuit breaker, Spread Shield, and Maker-First smart router. |
 
 > [!IMPORTANT]
 > **Engineering Rule**: All subsequent implementations, algorithm modifications, or operational adjustments must include updating or adding to the documentation suite in `docs/`.
@@ -206,15 +207,19 @@ trading-bot/
 │   ├── entropy.py           # Cross-Asset Shannon Entropy Wave Collapse Engine
 │   ├── symbolic_formula.py  # Neuro-Symbolic Genetic Formula Synthesizer
 │   ├── knowledge_vault.py   # Synaptic Knowledge Vault & Markov Transitions
-│   └── self_distillation.py # Counterfactual Replay & Post-Mortem Distiller
+│   ├── self_distillation.py # Counterfactual Replay & Post-Mortem Distiller
+│   ├── treasury.py          # VPS Self-Funding Treasury & Fractional Kelly Compounding
+│   ├── circuit_breaker.py   # Anti-Tilt Circuit Breaker & Spread-Spike News Shield
+│   ├── smart_router.py      # Maker-First Smart Order Router (75% fee reduction)
+│   └── lead_lag.py          # Cross-Asset Macro Lead-Lag Latency Engine
 ├── api/
 │   └── app.py               # FastAPI backend, background workers & trading loop
 ├── ui/
 │   ├── index.html           # Dark-mode glassmorphism dashboard
 │   ├── style.css            # Responsive UI styles
-│   └── app.js               # Reactive telemetry, controls & Synaptic Mini-AI panel
+│   └── app.js               # Reactive telemetry, controls, Treasury & Circuit Ribbon
 ├── bots/
-│   └── telegram_bot.py      # 2-way Telegram alerts & commands
+│   └── telegram_bot.py      # 2-way Telegram alerts & commands (/treasury, /circuit)
 ├── docs/                    # Complete technical and operational documentation
 │   ├── 00_index.md
 │   ├── 01_architecture_overview.md
@@ -226,13 +231,15 @@ trading-bot/
 │   ├── 07_telegram_bot.md
 │   ├── 08_deployment_and_operations.md
 │   ├── 09_platform_onboarding_and_api_setup.md
-│   └── 10_synaptic_mini_ai_and_lifelong_learning.md
+│   ├── 10_synaptic_mini_ai_and_lifelong_learning.md
+│   └── 11_treasury_circuit_breakers_and_smart_routing.md
 ├── scripts/
 │   └── bootstrap_history.py # Pre-training historical bootstrapper
 ├── tests/
 │   ├── test_components.py   # Core unit tests (6/6 passing)
 │   ├── test_frontier_engines.py # Frontier physics unit tests (5/5 passing)
-│   └── test_synaptic_ai.py  # Synaptic Mini-AI unit tests (5/5 passing)
+│   ├── test_synaptic_ai.py  # Synaptic Mini-AI unit tests (5/5 passing)
+│   └── test_owner_engines.py # Owner safeguards & production unit tests (6/6 passing)
 ├── docker-compose.yml       # Production container orchestration
 ├── Dockerfile               # Multi-stage production build
 └── requirements.txt         # Production dependencies

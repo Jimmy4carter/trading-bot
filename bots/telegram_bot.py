@@ -113,6 +113,35 @@ class TelegramNotifier:
             set_system_config("execution_mode", "demo")
             await self.send_message("🛡️ *EXECUTION MODE SWITCHED TO TRUE PAPER TRADING.* Capital is protected.")
 
+        elif cmd in ("/treasury", "/vps"):
+            from engines.treasury import vps_treasury
+            t = vps_treasury.get_treasury_status()
+            text = (
+                f"💰 *VPS SELF-FUNDING TREASURY*\n"
+                f"Reserve Accrued: *${t['vps_reserve_usd']:.2f}* / ${t['monthly_target_usd']:.2f}\n"
+                f"Monthly Goal: *{t['funded_percentage']}% Funded*\n"
+                f"Status: *{t['status_text']}*\n"
+                f"15% of all net profits are automatically swept to pay your Hetzner VPS."
+            )
+            await self.send_message(text)
+
+        elif cmd in ("/circuit", "/shield"):
+            from engines.circuit_breaker import circuit_breaker
+            c = circuit_breaker.get_status()
+            text = (
+                f"🛡️ *CIRCUIT BREAKER & SPREAD SHIELD*\n"
+                f"State: *{c['circuit_state']}*\n"
+                f"Consecutive Losses: *{c['consecutive_losses']}* / {c['max_allowed_consecutive_losses']}\n"
+                f"Cooling Remaining: *{c['remaining_cooling_minutes']} min*\n"
+                f"Spread Expansion Shield: *ACTIVE*"
+            )
+            await self.send_message(text)
+
+        elif cmd in ("/reset_circuit", "/unfreeze"):
+            from engines.circuit_breaker import circuit_breaker
+            circuit_breaker.manual_reset()
+            await self.send_message("✅ *CIRCUIT BREAKER RESET.* Cooling period cleared; normal execution resumed.")
+
         elif cmd == "/close_all":
             open_pos = get_open_positions()
             count = len(open_pos)
@@ -132,7 +161,10 @@ class TelegramNotifier:
             help_text = (
                 "📋 *Available Commands:*\n"
                 "`/status` - Live bot telemetry & equity\n"
-                "`/live` - Switch to Live Trading\n"
+                "`/treasury` - VPS Self-Funding reserve & monthly goal\n"
+                "`/circuit` - Anti-tilt circuit breaker & spread status\n"
+                "`/reset_circuit` - Manually unfreeze cooling period\n"
+                "`/live` - Switch to Live Trading (Real Capital)\n"
                 "`/demo` - Switch to True Paper Trading\n"
                 "`/close_all` - Emergency close all positions"
             )

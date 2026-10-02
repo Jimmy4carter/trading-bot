@@ -65,6 +65,7 @@ function startPolling() {
     fetchTelemetry();
     fetchFrontierTelemetry();
     fetchSynapticBrain();
+    fetchTreasuryAndCircuit();
     fetchWatchlist();
     fetchPositions();
     fetchHistory();
@@ -72,6 +73,7 @@ function startPolling() {
         fetchTelemetry();
         fetchFrontierTelemetry();
         fetchSynapticBrain();
+        fetchTreasuryAndCircuit();
         fetchPositions();
         fetchHistory();
     }, 3500);
@@ -278,6 +280,84 @@ async function triggerCheckpoint() {
         fetchSynapticBrain();
     } catch (err) {
         showToast("Checkpoint save error");
+    }
+}
+
+// Fetch VPS Treasury & Circuit Breaker Status
+async function fetchTreasuryAndCircuit() {
+    if (!authToken) return;
+    try {
+        // 1. VPS Treasury
+        const resT = await fetch('/api/treasury/status', { headers: authHeaders() });
+        if (resT.status === 200) {
+            const dataT = await resT.json();
+            const resVal = document.getElementById('vpsReserveVal');
+            if (resVal) resVal.innerText = `$${dataT.vps_reserve_usd.toFixed(2)} / $${dataT.monthly_target_usd.toFixed(2)}`;
+            const badgeT = document.getElementById('vpsFundedBadge');
+            if (badgeT) badgeT.innerText = `${dataT.funded_percentage}%`;
+            const meterT = document.getElementById('vpsReserveMeter');
+            if (meterT) meterT.style.width = `${Math.min(100, dataT.funded_percentage)}%`;
+        }
+
+        // 2. Circuit Breaker
+        const resC = await fetch('/api/circuit/status', { headers: authHeaders() });
+        if (resC.status === 200) {
+            const dataC = await resC.json();
+            const badgeC = document.getElementById('circuitBadge');
+            if (badgeC) {
+                if (dataC.is_cooling) {
+                    badgeC.innerText = `COOLING (${dataC.remaining_cooling_minutes}m left)`;
+                    badgeC.style.background = 'rgba(239, 68, 68, 0.2)';
+                    badgeC.style.color = '#f87171';
+                } else {
+                    badgeC.innerText = 'ACTIVE (NORMAL)';
+                    badgeC.style.background = 'rgba(16, 185, 129, 0.2)';
+                    badgeC.style.color = '#34d399';
+                }
+            }
+            const lossesText = document.getElementById('consecutiveLossesText');
+            if (lossesText) lossesText.innerText = `${dataC.consecutive_losses} / ${dataC.max_allowed_consecutive_losses}`;
+        }
+
+        // 3. Macro Lead-Lag
+        const resL = await fetch('/api/leadlag', { headers: authHeaders() });
+        if (resL.status === 200) {
+            const dataL = await resL.json();
+            const ll = dataL.lead_lag || {};
+            const macroText = document.getElementById('macroAlignmentText');
+            if (macroText) {
+                macroText.innerText = `${ll.macro_alignment || 'BULLISH_ALIGNED'}`;
+                macroText.style.color = (ll.macro_alignment === 'BULLISH_ALIGNED') ? '#34d399' : (ll.macro_alignment === 'BEARISH_ALIGNED' ? '#f87171' : '#f59e0b');
+            }
+        }
+    } catch (err) {
+        console.error("Treasury/Circuit fetch error:", err);
+    }
+}
+
+// Reset Circuit Breaker
+async function resetCircuitBreaker() {
+    showToast("Resetting anti-tilt circuit breaker...");
+    try {
+        const res = await fetch('/api/circuit/reset', { method: 'POST', headers: authHeaders() });
+        const data = await res.json();
+        showToast(data.message || "Circuit breaker reset.");
+        fetchTreasuryAndCircuit();
+    } catch (err) {
+        showToast("Error resetting circuit breaker");
+    }
+}
+
+// Reset VPS Treasury
+async function resetVPSTreasury() {
+    if (!confirm("Are you sure you want to reset the VPS reserve for a new billing cycle?")) return;
+    try {
+        const res = await fetch('/api/treasury/reset', { method: 'POST', headers: authHeaders() });
+        const data = await res.json();
+        showToast(data.message || "VPS Treasury reset.");
+        fetchTreasuryAndCircuit();
+    } catch (err) {
+        showToast("Error resetting VPS Treasury");
     }
 }
 

@@ -18,6 +18,7 @@ Welcome to the technical documentation for the **QuantumBit BHR (Bitwise Hologra
 | [08. Deployment & Operations](file:///c:/Users/User/Documents/GitHub/trading-bot/docs/08_deployment_and_operations.md) | Hetzner Cloud VPS provisioning (CX22 Ubuntu), Docker Compose orchestration, Caddy HTTPS reverse proxy, and 3-stage live rollout. |
 | [09. Platform Onboarding & API Setup](file:///c:/Users/User/Documents/GitHub/trading-bot/docs/09_platform_onboarding_and_api_setup.md) | Comprehensive step-by-step account registration, KYC verification, API key setup for Bybit, Binance, OANDA, Telegram, and Hetzner VPS. |
 | [10. Synaptic Mini-AI & Lifelong Learning](file:///c:/Users/User/Documents/GitHub/trading-bot/docs/10_synaptic_mini_ai_and_lifelong_learning.md) | Cognitive IQ and XP progression, Neuro-Symbolic formula evolution, Markov regime transition graph, and counterfactual self-distillation. |
+| [11. Owner Safeguards: Treasury & Circuit Breakers](file:///c:/Users/User/Documents/GitHub/trading-bot/docs/11_treasury_circuit_breakers_and_smart_routing.md) | VPS Self-Funding Treasury ($4.50 Hetzner target), Fractional Kelly compounding, Anti-Tilt circuit breaker, Spread Shield, and Maker-First smart router. |
 | [Original Blueprint Export](file:///c:/Users/User/Documents/GitHub/trading-bot/docs/Gemini-Autonomous%20Self-Improving%20Trading%20Bot%20Blueprint-20261002-1913.md) | Raw exported ideation session and evolutionary transcript. |
 
 ---

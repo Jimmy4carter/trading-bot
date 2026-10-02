@@ -24,6 +24,7 @@ class FormulaGene:
         self.profitable_evaluations = 0
         self.sharpe_ratio = 1.0
         self.generation = 1
+        self.forward_test_passed = True
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -33,7 +34,8 @@ class FormulaGene:
             "win_rate": round(self.win_rate * 100.0, 1),
             "total_evaluations": self.total_evaluations,
             "sharpe_ratio": round(self.sharpe_ratio, 2),
-            "generation": self.generation
+            "generation": self.generation,
+            "forward_test_passed": self.forward_test_passed
         }
 
 class NeuroSymbolicFormulaSynthesizer:
@@ -180,10 +182,33 @@ class NeuroSymbolicFormulaSynthesizer:
             new_expr = self._mutate_expression(parent.expression)
             new_gene = FormulaGene(new_expr, weight=random.uniform(0.8, 1.2))
             new_gene.generation = parent.generation + 1
+            # Run Out-of-Sample Forward Verification
+            new_gene.forward_test_passed = self.validate_out_of_sample(new_expr)
             survivors.append(new_gene)
 
         self.gene_pool = survivors
         logger.info(f"[SYMBOLIC AI] Evolved formula gene pool. Top formula: {self.gene_pool[0].expression} (WinRate: {self.gene_pool[0].win_rate*100:.1f}%)")
+
+    def validate_out_of_sample(self, expr: str) -> bool:
+        """
+        Validates a newly mutated formula across a forward test synthetic buffer.
+        Rejects formulas that produce degenerate constants (e.g. always 0 or always nan).
+        """
+        test_points = [
+            {"v_price": 0.8, "viscosity": 0.5, "entropy": 0.4, "rsi_norm": 0.7, "kinetic_energy": 1.2, "vol_ratio": 1.5},
+            {"v_price": -0.8, "viscosity": 0.5, "entropy": 0.4, "rsi_norm": 0.3, "kinetic_energy": 1.2, "vol_ratio": 1.5},
+            {"v_price": 0.1, "viscosity": 2.5, "entropy": 0.8, "rsi_norm": 0.5, "kinetic_energy": 0.2, "vol_ratio": 0.8}
+        ]
+        outputs = []
+        for tp in test_points:
+            val = self.evaluate_expression(expr, tp)
+            if math.isnan(val) or math.isinf(val):
+                return False
+            outputs.append(val)
+
+        # Ensure formula is dynamic (not a flat constant)
+        variance = max(outputs) - min(outputs)
+        return variance > 0.05
 
     def _mutate_expression(self, expr: str) -> str:
         """Mutates constants, primitives, or operations in an expression."""

@@ -1,10 +1,10 @@
 {
   "version": "2.0-synaptic",
-  "last_saved": "2026-10-02 21:11:13",
-  "ai_level": 1,
-  "ai_iq": 133.7,
-  "total_experience_points": 75,
-  "total_epochs": 1,
+  "last_saved": "2026-10-02 21:42:03",
+  "ai_level": 2,
+  "ai_iq": 144.2,
+  "total_experience_points": 315,
+  "total_epochs": 4,
   "post_mortems_analyzed": 0,
   "current_regime": "CHOP_ACCUMULATION",
   "regime_transitions": {

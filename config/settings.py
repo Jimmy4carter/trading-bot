@@ -28,6 +28,11 @@ try:
         TRAILING_ACTIVATION_PCT: float = Field(default=0.008)
         TRAILING_PULLBACK_PCT: float = Field(default=0.0025)
 
+        # Perpetual Futures & Margin Sizing
+        DEFAULT_LEVERAGE: int = Field(default=1) # 1x to 10x
+        MARGIN_MODE: str = Field(default="isolated") # 'isolated' or 'cross'
+        FUTURES_ENABLED: bool = Field(default=False)
+
         BINANCE_API_KEY: str = Field(default="")
         BINANCE_API_SECRET: str = Field(default="")
 
@@ -94,6 +99,10 @@ except ImportError:
         STOP_LOSS_PCT = float(os.getenv("STOP_LOSS_PCT", "0.006"))
         TRAILING_ACTIVATION_PCT = float(os.getenv("TRAILING_ACTIVATION_PCT", "0.008"))
         TRAILING_PULLBACK_PCT = float(os.getenv("TRAILING_PULLBACK_PCT", "0.0025"))
+
+        DEFAULT_LEVERAGE = int(os.getenv("DEFAULT_LEVERAGE", "1"))
+        MARGIN_MODE = os.getenv("MARGIN_MODE", "isolated")
+        FUTURES_ENABLED = os.getenv("FUTURES_ENABLED", "false").lower() in ("true", "1")
 
         BINANCE_API_KEY = os.getenv("BINANCE_API_KEY", "")
         BINANCE_API_SECRET = os.getenv("BINANCE_API_SECRET", "")

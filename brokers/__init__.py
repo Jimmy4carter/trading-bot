@@ -43,6 +43,11 @@ class OmniBrokerRouter:
         """Returns the default active broker name ('bybit', 'binance', or 'oanda')."""
         return get_system_config("active_broker", settings.ACTIVE_BROKER).lower()
 
+    @property
+    def active_broker(self) -> str:
+        """Convenience property returning the active broker name."""
+        return self.get_active_broker_name()
+
     def get_broker(self, broker_name: Optional[str] = None) -> BaseBroker:
         """
         Retrieves the appropriate broker instance based on name and execution mode.

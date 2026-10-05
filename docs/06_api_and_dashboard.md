@@ -65,17 +65,20 @@ Returns real-time engine telemetry, active mode, live broker balances, trading s
       "used_usd": 0.00
     },
     "performance": {
-      "total_trades": 0,
-      "win_rate": 0.0,
-      "net_profit_usd": 0.0,
-      "profit_factor": 0.0
+      "total_trades": 10,
+      "win_rate": 60.0,
+      "net_profit_usd": 0.45,
+      "profit_factor": 1.75
     },
     "config": {
-      "max_concurrent_trades": 1,
-      "trade_size_usd": 5.0,
-      "min_confidence_threshold": 0.35,
+      "max_concurrent_trades": 3,
+      "trade_size_usd": 10.0,
+      "min_confidence_threshold": 0.65,
       "take_profit_pct": 0.015,
-      "stop_loss_pct": 0.006
+      "stop_loss_pct": 0.006,
+      "default_leverage": 3,
+      "margin_mode": "isolated",
+      "futures_enabled": true
     }
   }
   ```
@@ -85,11 +88,78 @@ Updates dynamic system configuration in real-time. Changes are saved to SQLite a
 - **Request Body**:
   ```json
   {
-    "execution_mode": "paper",
+    "execution_mode": "demo",
     "active_broker": "bybit",
-    "trade_size_usd": 5.0,
-    "max_concurrent_trades": 1,
-    "min_confidence_threshold": 0.35
+    "trade_size_usd": 10.0,
+    "max_concurrent_trades": 3,
+    "min_confidence_threshold": 0.65,
+    "default_leverage": 3,
+    "margin_mode": "isolated",
+    "futures_enabled": true
+  }
+  ```
+
+#### `GET /api/chart/equity`
+Returns historical sub-tick equity trajectory coordinates calculated from the trade ledger.
+- **Response (200 OK)**:
+  ```json
+  {
+    "starting_balance": 10.0,
+    "current_balance": 10.45,
+    "profit_factor": 1.75,
+    "total_points": 11,
+    "points": [
+      { "index": 0, "timestamp": 0, "balance": 10.0, "pnl": 0.0, "symbol": "INITIAL", "result": "START" },
+      { "index": 1, "timestamp": 1727902500, "balance": 10.15, "pnl": 0.15, "symbol": "BTC/USDT", "result": "WIN" }
+    ]
+  }
+  ```
+
+#### `GET /api/futures/status`
+Returns perpetual futures margin state, leverage tier, liquidation buffer distance, and live 8-hour funding rates.
+- **Response (200 OK)**:
+  ```json
+  {
+    "futures_enabled": true,
+    "default_leverage": 3,
+    "margin_mode": "isolated",
+    "liquidation_buffer_pct": 33.3,
+    "max_leverage_allowed": 10,
+    "maintenance_margin_pct": 0.5,
+    "contracts": [
+      {
+        "symbol": "BTC/USDT:USDT",
+        "venue": "Bybit USDT Perps",
+        "type": "Perpetual Future",
+        "funding_rate_8h": "+0.0100%",
+        "countdown": "3h 24m",
+        "predicted_next": "+0.0085%",
+        "leverage_cap": "10x Safe Cap"
+      }
+    ]
+  }
+  ```
+
+#### `POST /api/futures/config`
+Updates perpetual futures leverage multiplier and margin isolation mode.
+- **Request Body**:
+  ```json
+  {
+    "default_leverage": 3,
+    "margin_mode": "isolated",
+    "futures_enabled": true
+  }
+  ```
+
+#### `POST /api/telegram/test`
+Dispatches an instant test push notification to the configured Telegram smartphone chat to verify token and chat ID.
+- **Response (200 OK)**:
+  ```json
+  {
+    "status": "success",
+    "sent": true,
+    "configured": true,
+    "message": "Test alert dispatched to Telegram chat"
   }
   ```
 
@@ -109,13 +179,6 @@ Adds a new market pair to the active scanner.
 
 #### `POST /api/watchlist/toggle`
 Enables or disables scanning for a specific symbol without deleting it.
-- **Request Body**:
-  ```json
-  {
-    "symbol": "BTC/USDT",
-    "is_active": false
-  }
-  ```
 
 #### `GET /api/positions`
 Returns all currently open positions with real-time unrealized PnL, highest price reached, and entry timestamps.
@@ -133,44 +196,7 @@ Returns a paginated log of executed and closed trades from SQLite, including dur
 Triggers the pre-training engine in the background to download historical OHLCV data and populate the BHR pattern database.
 
 #### `GET /api/frontier`
-Provides real-time diagnostic telemetry for the five Frontier Neural Physics paradigms:
-```json
-{
-  "status": "active",
-  "paradigms": {
-    "hdc_memory": {
-      "name": "1,024-bit Hyperdimensional Associative Memory",
-      "status": "ONLINE",
-      "vector_dimension": 1024,
-      "cached_pairs": 5
-    },
-    "rule_110_automaton": {
-      "name": "Wolfram Rule 110 Glider Lattice",
-      "status": "MONITORING_COHERENCE",
-      "lattice_size": 128,
-      "evolution_steps": 24
-    },
-    "hydraulics": {
-      "name": "Navier-Stokes Liquidity Hydraulics & Viscosity",
-      "status": "STREAMING_VACUUM_DETECTION",
-      "physics_metric": "Viscosity Index (μ)"
-    },
-    "shadow_adversary": {
-      "name": "AlphaZero-Style Predatory Market Maker",
-      "status": "ACTIVE_STOP_HARDENING",
-      "simulation_rounds": 50
-    },
-    "entropy_wave": {
-      "name": "Cross-Asset Joint Shannon Entropy",
-      "status": "MONITORING_ENTROPY",
-      "joint_entropy": 0.74,
-      "wave_collapse": false,
-      "dominant_direction": "NEUTRAL_DRIFT",
-      "leading_symbol": "BTC/USDT"
-    }
-  }
-}
-```
+Provides real-time diagnostic telemetry for the five Frontier Neural Physics paradigms (1,024-bit HDC Memory, Wolfram Rule 110 Gliders, Navier-Stokes Hydraulics, AlphaZero Shadow Adversary, Cross-Asset Shannon Entropy).
 
 #### `GET /api/brokers/status`
 Returns real-time connectivity status, ping latency (ms), configured credentials status, and capabilities for all 5 brokers (Bybit, Binance, Deriv API, Interactive Brokers, and OANDA).
@@ -188,8 +214,7 @@ Allows the administrator to manually fire a test buy or sell order directly on a
   ```
 
 #### `POST /api/watchlist/preset`
-Injects pre-curated trading universes in a single atomic transaction.
-- Supported Presets: `crypto_top5`, `forex_majors`, `metals`, `synthetics_247`, `lead_lag_macro`.
+Injects pre-curated trading universes in a single atomic transaction. Supported Presets: `crypto_top5`, `forex_majors`, `metals`, `synthetics_247`, `lead_lag_macro`.
 
 #### `GET /api/system/diagnostics`
 Returns real-time operating system metrics, SQLite database file size and WAL status, total disk capacity, evolved formula count, and Hetzner VPS targets.
@@ -202,11 +227,12 @@ Generates and downloads a complete cryptographic trade ledger in standard CSV fo
 ## 3. Web Dashboard Design System & Interactive Controls
 
 The web dashboard is implemented in vanilla HTML5, CSS3, and JavaScript without external runtime dependencies (React, Vue, or heavy node bundles), ensuring zero build overhead and fast asset loading on budget VPS links:
-- **Glassmorphism Theme**: Translucent dark surfaces with subtle backdrop blurs (`backdrop-filter: blur(16px)`).
+- **Interactive Real-Time Equity Curve Canvas**: Renders a high-resolution sub-tick growth vector chart with starting balance baseline ($10.00), glowing neon cyan trajectory line, gradient fill, and color-coded win/loss transaction nodes.
 - **Multi-Broker Fleet Hub**: Interactive broker cards showing connection state, latency (ms), supported execution features, and 1-click primary router activation.
+- **Perpetual Futures & Leverage Controller**: Live slider (1x–10x safe cap), isolated vs cross margin architecture selector, dynamic liquidation buffer distance meter (e.g. `33.3% Price Move`), and 8-hour perpetual funding rates table.
+- **Telegram Mobile Remote Control & Telemetry Widget**: Two-way status monitor with **"🔔 Send Test Alert"** button and one-click copyable command chips (`/status`, `/balance`, `/pnl`, `/fleet`, `/trade`, `/positions`, `/futures`, `/leverage`, `/margin`, `/funding`, `/risk`, `/brain`, `/distill`, `/close_all`).
 - **Manual Test Execution & Order Sandbox**: Integrated terminal allowing immediate order testing across any connected broker (Bybit, Binance, Deriv, IBKR) with instant fill receipts.
 - **Advanced Risk & Scalp Controller**: Real-time sliders for Take Profit (0.5%–5%), Hard Stop Loss (0.2%–3%), Trailing Stop Activation (0.3%–2.5%), VPS Cloud Treasury Sweep Rate (5%–30%), and Maker-First Post-Only Routing toggle.
 - **Watchlist Universe Presets**: Quick-injection chips for Crypto Top 5, Forex Majors (Deriv), Precious Metals, 24/7 Synthetics, and Macro Lead-Lag.
 - **Immutable Ledger Audit & Export**: Live symbol search filter plus instant one-click CSV export for spreadsheet reconciliation.
-- **Responsive Telemetry Polling**: Polls `/api/status`, `/api/brokers/status`, `/api/positions`, and `/api/frontier` every 3.5 seconds when authenticated.
-- **Safety Interlocks**: Live mode toggle and emergency kill switches require explicit double-confirmation before execution.
+- **Responsive Telemetry Polling**: Polls `/api/status`, `/api/brokers/status`, `/api/chart/equity`, `/api/futures/status`, and `/api/positions` every 3.5 seconds when authenticated.

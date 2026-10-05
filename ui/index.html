@@ -110,6 +110,27 @@
             </div>
         </section>
 
+        <!-- Live Real-Time Equity Curve & Profit Trajectory -->
+        <section class="panel glass-panel equity-chart-panel">
+            <div class="panel-header">
+                <div>
+                    <h3 style="color: #38bdf8;">Interactive Equity Curve & Performance Trajectory</h3>
+                    <span class="brand-subtitle">Sub-tick portfolio growth vector • High-water mark & drawdown threshold</span>
+                </div>
+                <div style="display: flex; gap: 8px; align-items: center;">
+                    <span class="badge" id="chartTotalTradesBadge" style="background: rgba(56, 189, 248, 0.2); color: #38bdf8;">0 Data Points</span>
+                </div>
+            </div>
+            <div class="equity-stats-bar">
+                <div class="equity-stat-item">Starting Base: <strong id="eqStartBase">$10.00</strong></div>
+                <div class="equity-stat-item">Peak Equity: <strong id="eqPeakVal" style="color: #34d399;">$10.00</strong></div>
+                <div class="equity-stat-item">Profit Factor: <strong id="eqProfitFactor" style="color: #a78bfa;">1.00</strong></div>
+                <div class="equity-stat-item">Fee Savings (Maker): <strong id="eqFeeSavings" style="color: #fbbf24;">$0.00</strong></div>
+                <div class="equity-stat-item">Live Trajectory: <strong id="eqTrajectoryStatus" style="color: #34d399;">EXPONENTIAL</strong></div>
+            </div>
+            <canvas id="equityCanvas" width="900" height="180"></canvas>
+        </section>
+
         <!-- Owner Guardrails & Circuit Breaker Ribbon -->
         <section class="panel glass-panel" style="margin-bottom: 20px; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(56, 189, 248, 0.25);">
             <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
@@ -135,6 +156,7 @@
                 <button class="btn btn-secondary" onclick="resetVPSTreasury()" style="padding: 4px 10px; font-size: 11px; border-color: rgba(245, 158, 11, 0.3); color: #fbbf24;">
                     💳 Reset Monthly VPS
                 </button>
+            </div>
         </section>
 
         <!-- Multi-Broker Fleet & Connectivity Hub -->
@@ -148,6 +170,86 @@
             </div>
             <div id="brokerFleetGrid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px;">
                 <!-- Populated dynamically by fetchBrokerFleet() -->
+            </div>
+        </section>
+
+        <!-- Perpetual Futures & Margin Sizing Hub -->
+        <section class="panel glass-panel futures-panel">
+            <div class="panel-header">
+                <div>
+                    <h3 style="color: #fb7185;">Perpetual Futures & Leverage Controller</h3>
+                    <span class="brand-subtitle">Bybit USDT Perps • Binance Futures • Deriv Multipliers • Isolated Risk Architecture</span>
+                </div>
+                <div style="display: flex; gap: 8px; align-items: center;">
+                    <span class="badge" id="marginModeBadge" style="background: rgba(244, 63, 94, 0.2); color: #fb7185;">ISOLATED MARGIN</span>
+                    <span class="badge" id="leverageBadge" style="background: rgba(251, 191, 36, 0.2); color: #fbbf24;">1x LEVERAGE</span>
+                </div>
+            </div>
+
+            <div class="futures-grid">
+                <!-- Left: Leverage & Margin Tuning -->
+                <div style="background: rgba(0,0,0,0.3); border-radius: 8px; padding: 14px; border: 1px solid rgba(255,255,255,0.06);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                        <span style="font-size: 12px; font-weight: 600; color: #fecdd3; text-transform: uppercase;">Margin Parameters</span>
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                            <input type="checkbox" id="futuresEnabledCheckbox" onchange="updateFuturesSettings()" style="width: 14px; height: 14px; accent-color: #f43f5e; cursor: pointer;">
+                            <label for="futuresEnabledCheckbox" style="font-size: 11px; color: #cbd5e1; cursor: pointer;">Enable Futures</label>
+                        </div>
+                    </div>
+
+                    <div class="slider-group" style="margin-bottom: 14px;">
+                        <div class="slider-header">
+                            <label for="leverageRange">Leverage Multiplier (Max 10x Safe Cap)</label>
+                            <span id="leverageValText" class="slider-badge" style="background: rgba(244, 63, 94, 0.25); color: #fda4af;">1x</span>
+                        </div>
+                        <input type="range" id="leverageRange" min="1" max="10" step="1" value="1" oninput="updateSliderVal('leverageRange', 'leverageValText', '', 'x')" onchange="updateFuturesSettings()">
+                    </div>
+
+                    <div style="display: flex; gap: 12px; margin-bottom: 12px;">
+                        <div class="form-group" style="flex: 1;">
+                            <label for="marginModeSelect" style="font-size: 11px; color: #cbd5e1;">Architecture</label>
+                            <select id="marginModeSelect" onchange="updateFuturesSettings()" style="padding: 6px 10px; font-size: 12px;">
+                                <option value="isolated">Isolated (Micro-Account Safe)</option>
+                                <option value="cross">Cross Margin (Shared Pool)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 10px; font-size: 11px; color: #94a3b8;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                            <span>Liquidation Buffer Distance:</span>
+                            <strong id="liqBufferText" style="color: #34d399;">100.0% Price Move</strong>
+                        </div>
+                        <div class="frontier-meter" style="height: 6px;">
+                            <div class="frontier-meter-bar" id="liqBufferMeter" style="width: 100%; background: #10b981;"></div>
+                        </div>
+                        <span style="font-size: 10px; color: #64748b; margin-top: 4px; display: block;">
+                            🛡️ Isolated margin prevents adverse liquidation from affecting portfolio cash.
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Right: Active Perpetual Contracts & Funding Rates Table -->
+                <div style="background: rgba(0,0,0,0.3); border-radius: 8px; padding: 14px; border: 1px solid rgba(255,255,255,0.06); overflow-x: auto;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <span style="font-size: 12px; font-weight: 600; color: #cbd5e1; text-transform: uppercase;">Perpetual Contracts & 8h Funding Rates</span>
+                        <span class="badge" style="font-size: 10px; color: #38bdf8;">Funding Tracker</span>
+                    </div>
+                    <table class="funding-table">
+                        <thead>
+                            <tr>
+                                <th>Contract</th>
+                                <th>Venue</th>
+                                <th>8h Funding</th>
+                                <th>Countdown</th>
+                                <th>Predicted</th>
+                            </tr>
+                        </thead>
+                        <tbody id="futuresContractsBody">
+                            <!-- Populated dynamically by fetchFuturesStatus() -->
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </section>
 
@@ -579,6 +681,43 @@
                         <!-- Populated dynamically -->
                     </tbody>
                 </table>
+            </div>
+        </section>
+
+        <!-- Telegram Bot Mobile Remote Command & Dispatcher Widget -->
+        <section class="panel glass-panel telegram-panel">
+            <div class="panel-header">
+                <div>
+                    <h3 style="color: #38bdf8;">Telegram Mobile Remote Control & Telemetry</h3>
+                    <span class="brand-subtitle">Two-way smartphone terminal • Real-time push alerts & instant command dispatch</span>
+                </div>
+                <div style="display: flex; gap: 8px; align-items: center;">
+                    <span class="badge" id="telegramStatusBadge" style="background: rgba(56, 189, 248, 0.2); color: #38bdf8;">Polling Active</span>
+                    <button class="btn btn-secondary" onclick="sendTelegramTestAlert()" style="padding: 4px 10px; font-size: 11px; border-color: rgba(56, 189, 248, 0.4); color: #38bdf8;">
+                        🔔 Send Test Alert
+                    </button>
+                </div>
+            </div>
+            <div style="font-size: 12px; color: #94a3b8; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                <span>Control your bot anytime from Telegram. Click any command chip below to copy:</span>
+                <span id="telegramFeedbackText" style="font-family: var(--font-mono); color: #34d399; font-size: 11px;"></span>
+            </div>
+            <div class="cmd-chips-container">
+                <span class="cmd-chip" onclick="copyTelegramCmd('/status')">/status</span>
+                <span class="cmd-chip" onclick="copyTelegramCmd('/balance')">/balance</span>
+                <span class="cmd-chip" onclick="copyTelegramCmd('/pnl')">/pnl</span>
+                <span class="cmd-chip" onclick="copyTelegramCmd('/fleet')">/fleet</span>
+                <span class="cmd-chip" onclick="copyTelegramCmd('/trade BTC/USDT BUY 10')">/trade &lt;SYM&gt; &lt;SIDE&gt;</span>
+                <span class="cmd-chip" onclick="copyTelegramCmd('/positions')">/positions</span>
+                <span class="cmd-chip" onclick="copyTelegramCmd('/futures')">/futures</span>
+                <span class="cmd-chip" onclick="copyTelegramCmd('/leverage 5')">/leverage &lt;1-10&gt;</span>
+                <span class="cmd-chip" onclick="copyTelegramCmd('/margin isolated')">/margin &lt;isolated|cross&gt;</span>
+                <span class="cmd-chip" onclick="copyTelegramCmd('/funding')">/funding</span>
+                <span class="cmd-chip" onclick="copyTelegramCmd('/risk 1.5 0.6')">/risk &lt;TP%&gt; &lt;SL%&gt;</span>
+                <span class="cmd-chip" onclick="copyTelegramCmd('/brain')">/brain</span>
+                <span class="cmd-chip" onclick="copyTelegramCmd('/distill')">/distill</span>
+                <span class="cmd-chip" onclick="copyTelegramCmd('/close_all')">/close_all</span>
+                <span class="cmd-chip" onclick="copyTelegramCmd('/help')">/help</span>
             </div>
         </section>
 

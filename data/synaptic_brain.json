@@ -1,15 +1,15 @@
 {
   "version": "2.0-synaptic",
-  "last_saved": "2026-10-05 18:45:06",
-  "ai_level": 8,
-  "ai_iq": 170.6,
-  "total_experience_points": 4999,
-  "total_epochs": 55,
+  "last_saved": "2026-10-05 19:35:58",
+  "ai_level": 9,
+  "ai_iq": 173.2,
+  "total_experience_points": 5884,
+  "total_epochs": 61,
   "post_mortems_analyzed": 0,
   "current_regime": "BULL_TREND",
   "regime_transitions": {
     "BULL_TREND": {
-      "BULL_TREND": 11,
+      "BULL_TREND": 364,
       "BEAR_TREND": 1,
       "CHOP_ACCUMULATION": 1,
       "HIGH_VOL_EXPLOSION": 1,
@@ -23,7 +23,7 @@
       "LIQUIDITY_CAVITATION": 1
     },
     "CHOP_ACCUMULATION": {
-      "BULL_TREND": 3,
+      "BULL_TREND": 5,
       "BEAR_TREND": 1,
       "CHOP_ACCUMULATION": 1,
       "HIGH_VOL_EXPLOSION": 1,
@@ -45,5 +45,5 @@
     }
   },
   "distilled_insights": [],
-  "top_formula": "math.tanh(v_price * 2.0) - (viscosity * 0.5)"
+  "top_formula": "math.sin(v_price * 3.1415) * kinetic_energy"
 }

@@ -421,7 +421,10 @@ async def get_status(user: str = Depends(get_current_user)):
         "trailing_pullback_pct": get_system_config("trailing_pullback_pct", settings.TRAILING_PULLBACK_PCT),
         "maker_first_routing": get_system_config("maker_first_routing", True),
         "vps_sweep_pct": get_system_config("vps_sweep_pct", 15.0),
-        "max_daily_drawdown_pct": get_system_config("max_daily_drawdown_pct", settings.MAX_DAILY_DRAWDOWN_PCT)
+        "max_daily_drawdown_pct": get_system_config("max_daily_drawdown_pct", settings.MAX_DAILY_DRAWDOWN_PCT),
+        "default_leverage": get_system_config("default_leverage", 1),
+        "margin_mode": get_system_config("margin_mode", "isolated"),
+        "futures_enabled": get_system_config("futures_enabled", False)
     }
 
     return {
@@ -446,6 +449,9 @@ class ConfigUpdateRequest(BaseModel):
     maker_first_routing: Optional[bool] = None
     vps_sweep_pct: Optional[float] = None
     max_daily_drawdown_pct: Optional[float] = None
+    default_leverage: Optional[int] = None
+    margin_mode: Optional[str] = None
+    futures_enabled: Optional[bool] = None
 
 @app.post("/api/config")
 async def update_config(req: ConfigUpdateRequest, user: str = Depends(get_current_user)):
@@ -473,6 +479,12 @@ async def update_config(req: ConfigUpdateRequest, user: str = Depends(get_curren
         set_system_config("vps_sweep_pct", float(req.vps_sweep_pct))
     if req.max_daily_drawdown_pct is not None:
         set_system_config("max_daily_drawdown_pct", float(req.max_daily_drawdown_pct))
+    if req.default_leverage is not None:
+        set_system_config("default_leverage", int(req.default_leverage))
+    if req.margin_mode is not None:
+        set_system_config("margin_mode", req.margin_mode.lower())
+    if req.futures_enabled is not None:
+        set_system_config("futures_enabled", bool(req.futures_enabled))
 
     return {"status": "success", "message": "Configuration updated"}
 
@@ -872,6 +884,144 @@ async def export_history(user: str = Depends(get_current_user)):
         media_type="text/csv",
         headers={"Content-Disposition": "attachment; filename=trade_ledger_export.csv"}
     )
+
+@app.post("/api/telegram/test")
+async def test_telegram_alert(user: str = Depends(get_current_user)):
+    """Dispatches a verification test message through the Telegram notifier."""
+    test_msg = (
+        "🔔 *QUANTUMBIT BHR TELEGRAM TEST ALERT*\n\n"
+        "Connection verified successfully from Admin Terminal!\n"
+        f"• Host Node: Hetzner Cloud VPS (CX22)\n"
+        f"• Execution Mode: `{router.get_execution_mode().upper()}`\n"
+        f"• Active Broker: `{router.active_broker.upper()}`\n"
+        f"• Timestamp: `{time.strftime('%Y-%m-%d %H:%M:%S UTC', time.gmtime())}`\n\n"
+        "Mobile command interface is online and ready for `/status`, `/futures`, `/trade`."
+    )
+    sent = await telegram_notifier.send_message(test_msg)
+    return {
+        "status": "success" if sent else ("mock" if not telegram_notifier.enabled else "failed"),
+        "sent": sent,
+        "configured": telegram_notifier.enabled,
+        "message": "Test alert dispatched to Telegram chat" if sent else (
+            "Telegram bot token or chat ID not set in .env (mock alert logged)" if not telegram_notifier.enabled else "Failed to send to Telegram API"
+        )
+    }
+
+@app.get("/api/futures/status")
+async def get_futures_status(user: str = Depends(get_current_user)):
+    """Returns perpetual futures margin state, leverage tier, and simulated funding rates."""
+    lev = int(get_system_config("default_leverage", settings.DEFAULT_LEVERAGE))
+    margin_mode = str(get_system_config("margin_mode", settings.MARGIN_MODE))
+    enabled = bool(get_system_config("futures_enabled", settings.FUTURES_ENABLED))
+    liquidation_buffer = round(100.0 / max(1, lev), 1)
+
+    contracts = [
+        {
+            "symbol": "BTC/USDT:USDT",
+            "venue": "Bybit USDT Perps",
+            "type": "Perpetual Future",
+            "funding_rate_8h": "+0.0100%",
+            "countdown": "3h 24m",
+            "predicted_next": "+0.0085%",
+            "leverage_cap": "10x Safe Cap"
+        },
+        {
+            "symbol": "ETH/USDT:USDT",
+            "venue": "Bybit USDT Perps",
+            "type": "Perpetual Future",
+            "funding_rate_8h": "+0.0078%",
+            "countdown": "3h 24m",
+            "predicted_next": "+0.0062%",
+            "leverage_cap": "10x Safe Cap"
+        },
+        {
+            "symbol": "SOL/USDT:USDT",
+            "venue": "Binance Futures",
+            "type": "Perpetual Future",
+            "funding_rate_8h": "+0.0125%",
+            "countdown": "3h 24m",
+            "predicted_next": "+0.0110%",
+            "leverage_cap": "10x Safe Cap"
+        },
+        {
+            "symbol": "1HZ100V",
+            "venue": "Deriv Multipliers",
+            "type": "Synthetic Multiplier",
+            "funding_rate_8h": "0.0000% (No Overnight Fee)",
+            "countdown": "Continuous 24/7",
+            "predicted_next": "0.0000%",
+            "leverage_cap": "x100 Multiplier"
+        }
+    ]
+
+    return {
+        "futures_enabled": enabled,
+        "default_leverage": lev,
+        "margin_mode": margin_mode,
+        "liquidation_buffer_pct": liquidation_buffer,
+        "max_leverage_allowed": 10,
+        "maintenance_margin_pct": 0.5,
+        "contracts": contracts
+    }
+
+class FuturesConfigRequest(BaseModel):
+    default_leverage: Optional[int] = None
+    margin_mode: Optional[str] = None
+    futures_enabled: Optional[bool] = None
+
+@app.post("/api/futures/config")
+async def update_futures_config(req: FuturesConfigRequest, user: str = Depends(get_current_user)):
+    """Updates perpetual futures leverage and margin mode configuration."""
+    if req.default_leverage is not None:
+        lev = max(1, min(10, int(req.default_leverage)))
+        set_system_config("default_leverage", lev)
+    if req.margin_mode is not None:
+        set_system_config("margin_mode", req.margin_mode.lower())
+    if req.futures_enabled is not None:
+        set_system_config("futures_enabled", bool(req.futures_enabled))
+
+    return {
+        "status": "success",
+        "message": "Futures margin configuration updated",
+        "default_leverage": get_system_config("default_leverage", 1),
+        "margin_mode": get_system_config("margin_mode", "isolated"),
+        "futures_enabled": get_system_config("futures_enabled", False)
+    }
+
+@app.get("/api/chart/equity")
+async def get_equity_curve(user: str = Depends(get_current_user)):
+    """Computes cumulative equity trajectory points from trade ledger."""
+    trades = get_recent_trades(limit=100)
+    chrono_trades = list(reversed(trades))
+    
+    starting_balance = 10.0
+    curr_balance = starting_balance
+    points = [{"index": 0, "timestamp": 0, "balance": starting_balance, "pnl": 0.0, "symbol": "INITIAL", "result": "START"}]
+    
+    for idx, t in enumerate(chrono_trades, start=1):
+        pnl = float(t.get("net_profit", 0.0) or 0.0)
+        curr_balance += pnl
+        points.append({
+            "index": idx,
+            "timestamp": t.get("close_timestamp", 0),
+            "balance": round(curr_balance, 3),
+            "pnl": round(pnl, 4),
+            "symbol": t.get("symbol", ""),
+            "result": "WIN" if pnl > 0 else ("LOSS" if pnl < 0 else "BE")
+        })
+
+    pnls = [float(t.get("net_profit", 0.0) or 0.0) for t in trades]
+    wins = [p for p in pnls if p > 0]
+    losses = [abs(p) for p in pnls if p < 0]
+    profit_factor = round(sum(wins) / sum(losses), 2) if sum(losses) > 0 else (round(sum(wins), 2) if sum(wins) > 0 else 1.0)
+    
+    return {
+        "starting_balance": starting_balance,
+        "current_balance": round(curr_balance, 2),
+        "points": points,
+        "total_points": len(points),
+        "profit_factor": profit_factor
+    }
 
 @app.get("/api/health")
 async def health_check():

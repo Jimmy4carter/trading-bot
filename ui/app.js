@@ -64,6 +64,8 @@ function startPolling() {
     if (pollingInterval) clearInterval(pollingInterval);
     fetchTelemetry();
     fetchBrokerFleet();
+    fetchEquityChart();
+    fetchFuturesStatus();
     fetchFrontierTelemetry();
     fetchSynapticBrain();
     fetchTreasuryAndCircuit();
@@ -74,6 +76,8 @@ function startPolling() {
     pollingInterval = setInterval(() => {
         fetchTelemetry();
         fetchBrokerFleet();
+        fetchEquityChart();
+        fetchFuturesStatus();
         fetchFrontierTelemetry();
         fetchSynapticBrain();
         fetchTreasuryAndCircuit();
@@ -829,4 +833,280 @@ async function fetchSystemDiagnostics() {
         console.error("Diagnostics error:", err);
     }
 }
+
+// Fetch Equity Chart & Trajectory Telemetry
+async function fetchEquityChart() {
+    if (!authToken) return;
+    try {
+        const res = await fetch('/api/chart/equity', { headers: authHeaders() });
+        if (!res.ok) return;
+        const data = await res.json();
+
+        // Update statistics
+        const pts = data.points || [];
+        const badge = document.getElementById('chartTotalTradesBadge');
+        if (badge) badge.innerText = `${pts.length} Data Points`;
+
+        const startEl = document.getElementById('eqStartBase');
+        if (startEl) startEl.innerText = `$${Number(data.starting_balance).toFixed(2)}`;
+
+        const peak = Math.max(...pts.map(p => p.balance), data.starting_balance);
+        const peakEl = document.getElementById('eqPeakVal');
+        if (peakEl) peakEl.innerText = `$${peak.toFixed(2)}`;
+
+        const pfEl = document.getElementById('eqProfitFactor');
+        if (pfEl) pfEl.innerText = `${data.profit_factor}`;
+
+        const feeEl = document.getElementById('eqFeeSavings');
+        if (feeEl) feeEl.innerText = `$${(pts.length * 0.045).toFixed(2)}`;
+
+        drawEquityCanvas(pts, data.starting_balance);
+    } catch (err) {
+        console.error("Equity chart fetch error:", err);
+    }
+}
+
+// Draw Glowing Neon Canvas Chart
+function drawEquityCanvas(points, baseBalance) {
+    const canvas = document.getElementById('equityCanvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const width = canvas.parentElement ? canvas.parentElement.clientWidth - 40 : 860;
+    const height = 180;
+    canvas.width = width;
+    canvas.height = height;
+
+    ctx.clearRect(0, 0, width, height);
+
+    if (!points || points.length === 0) {
+        points = [{ index: 0, balance: baseBalance, result: 'START' }];
+    }
+
+    // Determine scale
+    const balances = points.map(p => p.balance);
+    let minB = Math.min(...balances, baseBalance * 0.98);
+    let maxB = Math.max(...balances, baseBalance * 1.02);
+    if (minB === maxB) { minB -= 1; maxB += 1; }
+    const range = maxB - minB;
+
+    const padLeft = 45;
+    const padRight = 20;
+    const padTop = 20;
+    const padBottom = 25;
+    const plotW = width - padLeft - padRight;
+    const plotH = height - padTop - padBottom;
+
+    // Draw horizontal grid lines & price labels
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+    ctx.fillStyle = '#64748b';
+    ctx.font = '10px JetBrains Mono, monospace';
+    ctx.lineWidth = 1;
+
+    const gridLines = 4;
+    for (let i = 0; i <= gridLines; i++) {
+        const y = padTop + (plotH / gridLines) * i;
+        const val = maxB - (range / gridLines) * i;
+        ctx.beginPath();
+        ctx.moveTo(padLeft, y);
+        ctx.lineTo(width - padRight, y);
+        ctx.stroke();
+        ctx.fillText(`$${val.toFixed(2)}`, 6, y + 3);
+    }
+
+    // Draw Starting Capital Baseline (dashed)
+    const baseY = padTop + plotH - ((baseBalance - minB) / range) * plotH;
+    ctx.save();
+    ctx.setLineDash([4, 4]);
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.35)';
+    ctx.beginPath();
+    ctx.moveTo(padLeft, baseY);
+    ctx.lineTo(width - padRight, baseY);
+    ctx.stroke();
+    ctx.restore();
+
+    // Map points to coordinates
+    const coords = points.map((p, idx) => {
+        const x = padLeft + (points.length > 1 ? (idx / (points.length - 1)) * plotW : plotW / 2);
+        const y = padTop + plotH - ((p.balance - minB) / range) * plotH;
+        return { x, y, p };
+    });
+
+    if (coords.length > 1) {
+        // Gradient area fill
+        const grad = ctx.createLinearGradient(0, padTop, 0, padTop + plotH);
+        grad.addColorStop(0, 'rgba(56, 189, 248, 0.28)');
+        grad.addColorStop(1, 'rgba(56, 189, 248, 0.0)');
+
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.moveTo(coords[0].x, padTop + plotH);
+        coords.forEach(pt => ctx.lineTo(pt.x, pt.y));
+        ctx.lineTo(coords[coords.length - 1].x, padTop + plotH);
+        ctx.closePath();
+        ctx.fill();
+
+        // Glowing Line Stroke
+        ctx.strokeStyle = '#38bdf8';
+        ctx.lineWidth = 2.5;
+        ctx.lineJoin = 'round';
+        ctx.shadowColor = '#38bdf8';
+        ctx.shadowBlur = 8;
+        ctx.beginPath();
+        coords.forEach((pt, idx) => {
+            if (idx === 0) ctx.moveTo(pt.x, pt.y);
+            else ctx.lineTo(pt.x, pt.y);
+        });
+        ctx.stroke();
+        ctx.shadowBlur = 0; // reset
+    }
+
+    // Trade result dots
+    coords.forEach(pt => {
+        ctx.beginPath();
+        ctx.arc(pt.x, pt.y, 3.5, 0, Math.PI * 2);
+        if (pt.p.result === 'WIN') {
+            ctx.fillStyle = '#10b981';
+        } else if (pt.p.result === 'LOSS') {
+            ctx.fillStyle = '#f43f5e';
+        } else {
+            ctx.fillStyle = '#38bdf8';
+        }
+        ctx.fill();
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+    });
+}
+
+// Fetch Perpetual Futures Status & Contracts
+async function fetchFuturesStatus() {
+    if (!authToken) return;
+    try {
+        const res = await fetch('/api/futures/status', { headers: authHeaders() });
+        if (!res.ok) return;
+        const data = await res.json();
+
+        const levRange = document.getElementById('leverageRange');
+        if (levRange && document.activeElement !== levRange) levRange.value = data.default_leverage;
+
+        const levText = document.getElementById('leverageValText');
+        if (levText) levText.innerText = `${data.default_leverage}x`;
+
+        const levBadge = document.getElementById('leverageBadge');
+        if (levBadge) levBadge.innerText = `${data.default_leverage}x LEVERAGE`;
+
+        const modeSelect = document.getElementById('marginModeSelect');
+        if (modeSelect && document.activeElement !== modeSelect) modeSelect.value = data.margin_mode;
+
+        const modeBadge = document.getElementById('marginModeBadge');
+        if (modeBadge) modeBadge.innerText = `${data.margin_mode.toUpperCase()} MARGIN`;
+
+        const futCheck = document.getElementById('futuresEnabledCheckbox');
+        if (futCheck && document.activeElement !== futCheck) futCheck.checked = Boolean(data.futures_enabled);
+
+        const liqText = document.getElementById('liqBufferText');
+        if (liqText) liqText.innerText = `${data.liquidation_buffer_pct}% Price Move`;
+
+        const liqMeter = document.getElementById('liqBufferMeter');
+        if (liqMeter) {
+            const buf = Number(data.liquidation_buffer_pct);
+            liqMeter.style.width = `${Math.min(100, buf)}%`;
+            if (buf >= 30) {
+                liqMeter.style.background = '#10b981';
+            } else if (buf >= 15) {
+                liqMeter.style.background = '#fbbf24';
+            } else {
+                liqMeter.style.background = '#f43f5e';
+            }
+        }
+
+        // Render Contracts Table
+        const tbody = document.getElementById('futuresContractsBody');
+        if (tbody && data.contracts) {
+            tbody.innerHTML = '';
+            data.contracts.forEach(c => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><strong>${c.symbol}</strong></td>
+                    <td style="color: #94a3b8;">${c.venue}</td>
+                    <td style="color: #34d399; font-weight: 600;">${c.funding_rate_8h}</td>
+                    <td style="color: #38bdf8;">${c.countdown}</td>
+                    <td style="color: #a78bfa;">${c.predicted_next}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+    } catch (err) {
+        console.error("Futures status fetch error:", err);
+    }
+}
+
+// Update Futures Settings
+async function updateFuturesSettings() {
+    const payload = {
+        default_leverage: parseInt(document.getElementById('leverageRange').value),
+        margin_mode: document.getElementById('marginModeSelect').value,
+        futures_enabled: document.getElementById('futuresEnabledCheckbox').checked
+    };
+
+    try {
+        const res = await fetch('/api/futures/config', {
+            method: 'POST',
+            headers: authHeaders(),
+            body: JSON.stringify(payload)
+        });
+        if (res.ok) {
+            showToast("Perpetual Futures margin parameters updated");
+            fetchFuturesStatus();
+        }
+    } catch (err) {
+        showToast("Error updating futures config");
+    }
+}
+
+// Send Instant Telegram Test Alert
+async function sendTelegramTestAlert() {
+    showToast("Dispatching Telegram test alert to smartphone...");
+    const feedback = document.getElementById('telegramFeedbackText');
+    if (feedback) feedback.innerText = "Dispatching alert...";
+
+    try {
+        const res = await fetch('/api/telegram/test', {
+            method: 'POST',
+            headers: authHeaders()
+        });
+        const data = await res.json();
+        if (data.sent) {
+            showToast("✓ Telegram test alert delivered successfully!");
+            if (feedback) feedback.innerText = "✓ Test alert sent to Telegram chat";
+        } else if (data.status === "mock") {
+            showToast("ℹ Telegram alert recorded (Bot token not yet configured in .env)");
+            if (feedback) feedback.innerText = "ℹ Mock alert logged (Add credentials to .env)";
+        } else {
+            showToast("✗ Telegram alert delivery failed");
+            if (feedback) feedback.innerText = "✗ Delivery failed";
+        }
+    } catch (err) {
+        showToast("Network error contacting Telegram API");
+        if (feedback) feedback.innerText = "✗ Network error";
+    }
+}
+
+// Copy Telegram Command to Clipboard
+function copyTelegramCmd(cmd) {
+    if (navigator.clipboard) {
+        navigator.clipboard.writeText(cmd).then(() => {
+            showToast(`Copied "${cmd}" to clipboard`);
+            const feedback = document.getElementById('telegramFeedbackText');
+            if (feedback) feedback.innerText = `Copied to clipboard: ${cmd}`;
+        }).catch(() => {
+            showToast(`Command: ${cmd}`);
+        });
+    } else {
+        showToast(`Command: ${cmd}`);
+    }
+}
+
 

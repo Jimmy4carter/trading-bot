@@ -63,14 +63,17 @@ let pollingInterval = null;
 function startPolling() {
     if (pollingInterval) clearInterval(pollingInterval);
     fetchTelemetry();
+    fetchBrokerFleet();
     fetchFrontierTelemetry();
     fetchSynapticBrain();
     fetchTreasuryAndCircuit();
     fetchWatchlist();
     fetchPositions();
     fetchHistory();
+    fetchSystemDiagnostics();
     pollingInterval = setInterval(() => {
         fetchTelemetry();
+        fetchBrokerFleet();
         fetchFrontierTelemetry();
         fetchSynapticBrain();
         fetchTreasuryAndCircuit();
@@ -126,6 +129,43 @@ async function fetchTelemetry() {
             const confVal = Math.round((data.config.min_confidence_threshold || 0.65) * 100);
             document.getElementById('confidenceRange').value = confVal;
             document.getElementById('confidenceVal').innerText = `${confVal}%`;
+
+            if (data.config.take_profit_pct !== undefined) {
+                const tpVal = (data.config.take_profit_pct * 100).toFixed(1);
+                const tpEl = document.getElementById('takeProfitRange');
+                if (tpEl) tpEl.value = tpVal;
+                const tpTxt = document.getElementById('takeProfitVal');
+                if (tpTxt) tpTxt.innerText = `${tpVal}%`;
+            }
+
+            if (data.config.stop_loss_pct !== undefined) {
+                const slVal = (data.config.stop_loss_pct * 100).toFixed(1);
+                const slEl = document.getElementById('stopLossRange');
+                if (slEl) slEl.value = slVal;
+                const slTxt = document.getElementById('stopLossVal');
+                if (slTxt) slTxt.innerText = `${slVal}%`;
+            }
+
+            if (data.config.trailing_activation_pct !== undefined) {
+                const trVal = (data.config.trailing_activation_pct * 100).toFixed(1);
+                const trEl = document.getElementById('trailingRange');
+                if (trEl) trEl.value = trVal;
+                const trTxt = document.getElementById('trailingVal');
+                if (trTxt) trTxt.innerText = `${trVal}%`;
+            }
+
+            if (data.config.vps_sweep_pct !== undefined) {
+                const sweepVal = data.config.vps_sweep_pct;
+                const sweepEl = document.getElementById('vpsSweepRange');
+                if (sweepEl) sweepEl.value = sweepVal;
+                const sweepTxt = document.getElementById('vpsSweepVal');
+                if (sweepTxt) sweepTxt.innerText = `${sweepVal}%`;
+            }
+
+            if (data.config.maker_first_routing !== undefined) {
+                const mfEl = document.getElementById('makerFirstCheckbox');
+                if (mfEl) mfEl.checked = Boolean(data.config.maker_first_routing);
+            }
         }
     } catch (err) {
         console.error("Telemetry fetch error:", err);
@@ -486,7 +526,12 @@ async function updateSettings() {
         active_broker: document.getElementById('activeBrokerSelect').value,
         max_concurrent_trades: parseInt(document.getElementById('maxConcurrentRange').value),
         trade_size_usd: parseFloat(document.getElementById('tradeSizeRange').value),
-        min_confidence_threshold: parseFloat(document.getElementById('confidenceRange').value) / 100.0
+        min_confidence_threshold: parseFloat(document.getElementById('confidenceRange').value) / 100.0,
+        take_profit_pct: parseFloat(document.getElementById('takeProfitRange').value) / 100.0,
+        stop_loss_pct: parseFloat(document.getElementById('stopLossRange').value) / 100.0,
+        trailing_activation_pct: parseFloat(document.getElementById('trailingRange').value) / 100.0,
+        vps_sweep_pct: parseFloat(document.getElementById('vpsSweepRange').value),
+        maker_first_routing: document.getElementById('makerFirstCheckbox').checked
     };
 
     try {
@@ -498,6 +543,7 @@ async function updateSettings() {
         if (res.ok) {
             showToast("Risk & Execution parameters synchronized with AI");
             fetchTelemetry();
+            fetchBrokerFleet();
         }
     } catch (err) {
         showToast("Error updating settings");
@@ -604,3 +650,183 @@ function showToast(msg) {
         toast.classList.remove('show');
     }, 3000);
 }
+
+// Fetch Multi-Broker Fleet Matrix
+async function fetchBrokerFleet() {
+    if (!authToken) return;
+    try {
+        const res = await fetch('/api/brokers/status', { headers: authHeaders() });
+        if (!res.ok) return;
+        const data = await res.json();
+        const fleet = data.fleet || {};
+        const active = data.active_broker || 'bybit';
+        const container = document.getElementById('brokerFleetGrid');
+        if (!container) return;
+
+        container.innerHTML = '';
+        Object.keys(fleet).forEach(key => {
+            const b = fleet[key];
+            const isActive = (key.toLowerCase() === active.toLowerCase());
+            const card = document.createElement('div');
+            card.className = `broker-card ${isActive ? 'active-broker-border' : ''}`;
+
+            let badgeColor = '#94a3b8';
+            let badgeBg = 'rgba(255,255,255,0.05)';
+            if (isActive) {
+                badgeColor = '#38bdf8';
+                badgeBg = 'rgba(56, 189, 248, 0.2)';
+            } else if (b.status === 'READY') {
+                badgeColor = '#34d399';
+                badgeBg = 'rgba(16, 185, 129, 0.2)';
+            } else if (b.status === 'PENDING_KYC') {
+                badgeColor = '#fbbf24';
+                badgeBg = 'rgba(245, 158, 11, 0.2)';
+            } else if (b.status === 'RESTRICTED_REGION') {
+                badgeColor = '#f87171';
+                badgeBg = 'rgba(239, 68, 68, 0.2)';
+            }
+
+            card.innerHTML = `
+                <div class="broker-card-header">
+                    <span class="broker-card-title">${b.name}</span>
+                    <span class="badge" style="background: ${badgeBg}; color: ${badgeColor}; font-size: 10px;">
+                        ${b.status}
+                    </span>
+                </div>
+                <div style="font-size: 11px; color: #94a3b8; display: flex; justify-content: space-between;">
+                    <span>Mode: <strong style="color: #cbd5e1;">${b.mode}</strong></span>
+                    <span>Ping: <strong style="color: #38bdf8;">${b.latency_ms}ms</strong></span>
+                </div>
+                <div class="broker-card-caps">
+                    ${b.capabilities.map(c => `<span class="broker-cap-tag">${c}</span>`).join('')}
+                </div>
+                ${!isActive && b.status !== 'RESTRICTED_REGION' ? `
+                    <button class="btn btn-secondary" onclick="setActiveBroker('${key}')" style="margin-top: 4px; padding: 4px 8px; font-size: 11px; width: 100%; border-color: rgba(56, 189, 248, 0.3); color: #38bdf8;">
+                        Activate ${b.name}
+                    </button>
+                ` : (isActive ? `
+                    <div style="text-align: center; font-size: 10px; color: #38bdf8; font-weight: 600; padding: 4px 0;">
+                        ● CURRENT PRIMARY ROUTER
+                    </div>
+                ` : `
+                    <div style="text-align: center; font-size: 10px; color: #f87171; padding: 4px 0;">
+                        Not Recommended (Region)
+                    </div>
+                `)}
+            `;
+            container.appendChild(card);
+        });
+    } catch (err) {
+        console.error("Broker fleet error:", err);
+    }
+}
+
+// 1-Click Set Active Broker
+async function setActiveBroker(name) {
+    document.getElementById('activeBrokerSelect').value = name;
+    await updateSettings();
+    showToast(`Switched active primary broker to ${name.toUpperCase()}`);
+}
+
+// Manual Test Trade Execution
+async function handleManualTrade() {
+    const broker = document.getElementById('manualBrokerSelect').value;
+    const symbol = document.getElementById('manualSymbolInput').value.trim();
+    const side = document.getElementById('manualSideSelect').value;
+    const amount_usd = parseFloat(document.getElementById('manualAmountInput').value) || 10.0;
+    const feedback = document.getElementById('manualTradeFeedback');
+
+    if (!symbol) {
+        showToast("Please enter a valid symbol");
+        return;
+    }
+
+    feedback.style.display = 'block';
+    feedback.innerText = `Dispatching test ${side} order on ${broker.toUpperCase()}...`;
+
+    try {
+        const res = await fetch('/api/manual_trade', {
+            method: 'POST',
+            headers: authHeaders(),
+            body: JSON.stringify({ broker, symbol, side, amount_usd })
+        });
+        const data = await res.json();
+        if (res.ok) {
+            feedback.style.color = '#34d399';
+            feedback.innerText = `✓ ${data.message} | Fill Price: $${data.position.entry_price} | ID: ${data.position.id}`;
+            showToast(`Test ${side} order executed on ${broker}!`);
+            fetchPositions();
+            fetchTelemetry();
+        } else {
+            feedback.style.color = '#f87171';
+            feedback.innerText = `✗ Order failed: ${data.detail || "Execution rejected"}`;
+        }
+    } catch (err) {
+        feedback.style.color = '#f87171';
+        feedback.innerText = `✗ Network error dispatching order`;
+    }
+}
+
+// Load Watchlist Preset
+async function loadPreset(presetName) {
+    try {
+        const res = await fetch('/api/watchlist/preset', {
+            method: 'POST',
+            headers: authHeaders(),
+            body: JSON.stringify({ preset: presetName })
+        });
+        const data = await res.json();
+        if (res.ok) {
+            showToast(data.message);
+            fetchWatchlist();
+        } else {
+            showToast(data.detail || "Failed to load preset");
+        }
+    } catch (err) {
+        showToast("Preset load error");
+    }
+}
+
+// Export Ledger to CSV
+function exportLedgerCsv() {
+    window.open('/api/history/export', '_blank');
+}
+
+// Filter Closed Trades in History
+function filterHistory() {
+    const query = document.getElementById('historyFilterInput').value.trim().toUpperCase();
+    const rows = document.querySelectorAll('#historyBody tr');
+    rows.forEach(r => {
+        if (!query) {
+            r.style.display = '';
+            return;
+        }
+        const text = r.innerText.toUpperCase();
+        r.style.display = text.includes(query) ? '' : 'none';
+    });
+}
+
+// Fetch System Diagnostics & Hetzner Telemetry
+async function fetchSystemDiagnostics() {
+    if (!authToken) return;
+    try {
+        const res = await fetch('/api/system/diagnostics', { headers: authHeaders() });
+        if (!res.ok) return;
+        const data = await res.json();
+        
+        const osEl = document.getElementById('diagOsText');
+        if (osEl) osEl.innerText = data.os;
+
+        const dbEl = document.getElementById('diagDbText');
+        if (dbEl) dbEl.innerText = `${data.database.size_kb} KB`;
+
+        const geneEl = document.getElementById('diagGeneText');
+        if (geneEl) geneEl.innerText = `${data.gene_pool_size} Evolved`;
+
+        const vpsEl = document.getElementById('diagVpsText');
+        if (vpsEl) vpsEl.innerText = `${data.vps_target}`;
+    } catch (err) {
+        console.error("Diagnostics error:", err);
+    }
+}
+

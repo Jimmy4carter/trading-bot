@@ -38,6 +38,17 @@ try:
         OANDA_ACCOUNT_ID: str = Field(default="")
         OANDA_ENVIRONMENT: str = Field(default="practice")
 
+        # Deriv API Settings (Forex, Commodities & 24/7 Synthetics)
+        DERIV_API_TOKEN: str = Field(default="")
+        DERIV_APP_ID: str = Field(default="1089")
+        DERIV_ENDPOINT: str = Field(default="wss://ws.derivws.com/websockets/v3")
+
+        # Interactive Brokers (IBKR) Settings (Institutional DMA)
+        IBKR_HOST: str = Field(default="127.0.0.1")
+        IBKR_PORT: int = Field(default=4002) # 4002 for Paper, 4001 for Live IB Gateway
+        IBKR_CLIENT_ID: int = Field(default=1)
+        IBKR_ACCOUNT: str = Field(default="")
+
         SQLITE_DB_PATH: str = Field(default=str(BASE_DIR / "trading_ledger.db"))
         REDIS_HOST: str = Field(default="localhost")
         REDIS_PORT: int = Field(default=6379)
@@ -93,6 +104,15 @@ except ImportError:
         OANDA_API_KEY = os.getenv("OANDA_API_KEY", "")
         OANDA_ACCOUNT_ID = os.getenv("OANDA_ACCOUNT_ID", "")
         OANDA_ENVIRONMENT = os.getenv("OANDA_ENVIRONMENT", "practice")
+
+        DERIV_API_TOKEN = os.getenv("DERIV_API_TOKEN", "")
+        DERIV_APP_ID = os.getenv("DERIV_APP_ID", "1089")
+        DERIV_ENDPOINT = os.getenv("DERIV_ENDPOINT", "wss://ws.derivws.com/websockets/v3")
+
+        IBKR_HOST = os.getenv("IBKR_HOST", "127.0.0.1")
+        IBKR_PORT = int(os.getenv("IBKR_PORT", "4002"))
+        IBKR_CLIENT_ID = int(os.getenv("IBKR_CLIENT_ID", "1"))
+        IBKR_ACCOUNT = os.getenv("IBKR_ACCOUNT", "")
 
         SQLITE_DB_PATH = os.getenv("SQLITE_DB_PATH", str(BASE_DIR / "trading_ledger.db"))
         REDIS_HOST = os.getenv("REDIS_HOST", "localhost")

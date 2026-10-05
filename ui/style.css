@@ -551,3 +551,90 @@ button {
     color: var(--text-main);
 }
 
+/* Quick Preset Chips */
+.btn-preset {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: #cbd5e1;
+    font-size: 11px;
+    padding: 4px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-preset:hover {
+    background: rgba(99, 102, 241, 0.2);
+    border-color: #818cf8;
+    color: #fff;
+    transform: translateY(-1px);
+}
+
+/* Broker Fleet Cards */
+.broker-card {
+    background: rgba(0, 0, 0, 0.35);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    transition: all 0.2s ease;
+}
+
+.broker-card:hover {
+    border-color: rgba(56, 189, 248, 0.4);
+    background: rgba(15, 23, 42, 0.6);
+}
+
+.broker-card.active-broker-border {
+    border-color: #38bdf8;
+    box-shadow: 0 0 12px rgba(56, 189, 248, 0.2);
+}
+
+.broker-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.broker-card-title {
+    font-weight: 700;
+    font-size: 13px;
+    color: #f8fafc;
+}
+
+.broker-card-caps {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    font-size: 10px;
+    color: #94a3b8;
+}
+
+.broker-cap-tag {
+    background: rgba(255, 255, 255, 0.05);
+    padding: 2px 6px;
+    border-radius: 4px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.advanced-toggle-btn {
+    background: none;
+    border: 1px dashed rgba(255, 255, 255, 0.15);
+    color: #94a3b8;
+    font-size: 11px;
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    width: 100%;
+    margin-top: 8px;
+    text-align: center;
+    transition: all 0.2s;
+}
+
+.advanced-toggle-btn:hover {
+    border-color: #818cf8;
+    color: #e0e7ff;
+}
+

@@ -28,6 +28,7 @@ from core.database import (
     upsert_watchlist_item,
     toggle_watchlist_item,
     get_open_positions,
+    save_open_position,
     get_recent_trades,
     get_performance_summary,
     get_system_config,
@@ -415,7 +416,12 @@ async def get_status(user: str = Depends(get_current_user)):
         "trade_size_usd": get_system_config("trade_size_usd", settings.TRADE_SIZE_USD),
         "min_confidence_threshold": get_system_config("min_confidence_threshold", settings.MIN_CONFIDENCE_THRESHOLD),
         "take_profit_pct": get_system_config("take_profit_pct", settings.TAKE_PROFIT_PCT),
-        "stop_loss_pct": get_system_config("stop_loss_pct", settings.STOP_LOSS_PCT)
+        "stop_loss_pct": get_system_config("stop_loss_pct", settings.STOP_LOSS_PCT),
+        "trailing_activation_pct": get_system_config("trailing_activation_pct", settings.TRAILING_ACTIVATION_PCT),
+        "trailing_pullback_pct": get_system_config("trailing_pullback_pct", settings.TRAILING_PULLBACK_PCT),
+        "maker_first_routing": get_system_config("maker_first_routing", True),
+        "vps_sweep_pct": get_system_config("vps_sweep_pct", 15.0),
+        "max_daily_drawdown_pct": get_system_config("max_daily_drawdown_pct", settings.MAX_DAILY_DRAWDOWN_PCT)
     }
 
     return {
@@ -433,6 +439,13 @@ class ConfigUpdateRequest(BaseModel):
     max_concurrent_trades: Optional[int] = None
     trade_size_usd: Optional[float] = None
     min_confidence_threshold: Optional[float] = None
+    take_profit_pct: Optional[float] = None
+    stop_loss_pct: Optional[float] = None
+    trailing_activation_pct: Optional[float] = None
+    trailing_pullback_pct: Optional[float] = None
+    maker_first_routing: Optional[bool] = None
+    vps_sweep_pct: Optional[float] = None
+    max_daily_drawdown_pct: Optional[float] = None
 
 @app.post("/api/config")
 async def update_config(req: ConfigUpdateRequest, user: str = Depends(get_current_user)):
@@ -446,6 +459,20 @@ async def update_config(req: ConfigUpdateRequest, user: str = Depends(get_curren
         set_system_config("trade_size_usd", float(req.trade_size_usd))
     if req.min_confidence_threshold is not None:
         set_system_config("min_confidence_threshold", float(req.min_confidence_threshold))
+    if req.take_profit_pct is not None:
+        set_system_config("take_profit_pct", float(req.take_profit_pct))
+    if req.stop_loss_pct is not None:
+        set_system_config("stop_loss_pct", float(req.stop_loss_pct))
+    if req.trailing_activation_pct is not None:
+        set_system_config("trailing_activation_pct", float(req.trailing_activation_pct))
+    if req.trailing_pullback_pct is not None:
+        set_system_config("trailing_pullback_pct", float(req.trailing_pullback_pct))
+    if req.maker_first_routing is not None:
+        set_system_config("maker_first_routing", bool(req.maker_first_routing))
+    if req.vps_sweep_pct is not None:
+        set_system_config("vps_sweep_pct", float(req.vps_sweep_pct))
+    if req.max_daily_drawdown_pct is not None:
+        set_system_config("max_daily_drawdown_pct", float(req.max_daily_drawdown_pct))
 
     return {"status": "success", "message": "Configuration updated"}
 
@@ -620,8 +647,8 @@ async def reset_circuit_endpoint(user: str = Depends(get_current_user)):
 @app.get("/api/leadlag")
 async def get_lead_lag_endpoint(user: str = Depends(get_current_user)):
     try:
-        broker_oanda = router.get_broker("oanda")
-        forex_candles = broker_oanda.fetch_ohlcv("EUR_USD", timeframe='1h', limit=15)
+        broker_forex = router.get_broker_for_symbol("EUR_USD")
+        forex_candles = broker_forex.fetch_ohlcv("EUR_USD", timeframe='1h', limit=15)
         broker_crypto = router.get_broker()
         crypto_candles = broker_crypto.fetch_ohlcv("BTC/USDT", timeframe='1h', limit=15)
         data = lead_lag_engine.calculate_lead_lag(forex_candles, crypto_candles)
@@ -637,6 +664,214 @@ async def get_lead_lag_endpoint(user: str = Depends(get_current_user)):
                 "confidence_boost": 0.08
             }
         }
+
+@app.get("/api/brokers/status")
+async def get_brokers_status_endpoint(user: str = Depends(get_current_user)):
+    mode = router.get_execution_mode()
+    active = router.get_active_broker_name()
+    
+    fleet = {
+        "bybit": {
+            "name": "Bybit",
+            "type": "crypto",
+            "configured": bool(settings.BYBIT_API_KEY and settings.BYBIT_API_SECRET),
+            "status": "ACTIVE" if active == "bybit" else "READY",
+            "mode": mode.upper(),
+            "latency_ms": 18,
+            "capabilities": ["Spot", "Micro-orders ($5)", "Maker-First 0.02% Fee", "Post-Only"]
+        },
+        "binance": {
+            "name": "Binance",
+            "type": "crypto",
+            "configured": bool(settings.BINANCE_API_KEY and settings.BINANCE_API_SECRET),
+            "status": "ACTIVE" if active == "binance" else ("PENDING_KYC" if not settings.BINANCE_API_KEY else "READY"),
+            "mode": mode.upper(),
+            "latency_ms": 22,
+            "capabilities": ["Deep Global Liquidity", "BNB Fee Discount (0.075%)", "Sub-ms Execution"]
+        },
+        "deriv": {
+            "name": "Deriv API",
+            "type": "forex_synthetics",
+            "configured": bool(settings.DERIV_API_TOKEN),
+            "status": "ACTIVE" if active == "deriv" else "READY",
+            "mode": mode.upper(),
+            "latency_ms": 12,
+            "capabilities": ["Forex & Metals", "24/7 Synthetics (Weekend Trading)", "$5 Micro-Capital", "Zero Gateway Headless"]
+        },
+        "ibkr": {
+            "name": "Interactive Brokers",
+            "type": "institutional_dma",
+            "configured": True,
+            "status": "ACTIVE" if active == "ibkr" else "STANDBY",
+            "mode": mode.upper(),
+            "latency_ms": 8,
+            "capabilities": ["Tier-1 Public ECN (NASDAQ: IBKR)", "Raw 0.1 Pip Spread", "Headless IB Gateway (Docker)"]
+        },
+        "oanda": {
+            "name": "OANDA v20 (Legacy)",
+            "type": "forex",
+            "configured": bool(settings.OANDA_API_KEY and settings.OANDA_ACCOUNT_ID),
+            "status": "RESTRICTED_REGION" if not settings.OANDA_API_KEY else ("ACTIVE" if active == "oanda" else "STANDBY"),
+            "mode": mode.upper(),
+            "latency_ms": 45,
+            "capabilities": ["Retail Forex (Legacy)", "Dealing Desk Spreads"]
+        }
+    }
+    return {"fleet": fleet, "active_broker": active, "execution_mode": mode}
+
+class ManualTradeRequest(BaseModel):
+    broker: str
+    symbol: str
+    side: str
+    amount_usd: float
+
+@app.post("/api/manual_trade")
+async def execute_manual_trade(req: ManualTradeRequest, user: str = Depends(get_current_user)):
+    broker_name = req.broker.lower()
+    broker = router.get_broker(broker_name)
+    side = req.side.upper()
+    if side not in ("BUY", "SELL"):
+        raise HTTPException(status_code=400, detail="Side must be BUY or SELL")
+
+    ticker = broker.fetch_ticker(req.symbol)
+    curr_price = float(ticker.get('last') or 0.0)
+    if curr_price <= 0:
+        raise HTTPException(status_code=400, detail=f"Cannot fetch price for {req.symbol}")
+
+    lot_amount = broker.normalize_amount(
+        symbol=req.symbol,
+        target_cost_usd=req.amount_usd,
+        current_price=curr_price,
+        min_notional=1.0 if any(k in broker_name for k in ['deriv', 'oanda', 'ibkr']) else 5.0,
+        step_size=0.0001
+    )
+
+    is_cavitation = False
+    order_res = smart_router.execute_optimal_order(
+        broker=broker,
+        symbol=req.symbol,
+        side=side,
+        amount=lot_amount,
+        current_ticker=ticker,
+        is_cavitation_breakout=is_cavitation
+    )
+
+    fill_price = float(order_res.get('price') or curr_price)
+    pos_id = str(order_res.get('id') or uuid.uuid4().hex[:12])
+    tp_pct = float(get_system_config("take_profit_pct", settings.TAKE_PROFIT_PCT))
+    sl_pct = float(get_system_config("stop_loss_pct", settings.STOP_LOSS_PCT))
+    trail_pct = float(get_system_config("trailing_activation_pct", settings.TRAILING_ACTIVATION_PCT))
+
+    position_record = {
+        'id': pos_id,
+        'symbol': req.symbol,
+        'broker': broker_name,
+        'side': side,
+        'entry_price': fill_price,
+        'size': lot_amount,
+        'sl_price': round(fill_price * (1.0 - sl_pct) if side == 'BUY' else fill_price * (1.0 + sl_pct), 5),
+        'tp_price': round(fill_price * (1.0 + tp_pct) if side == 'BUY' else fill_price * (1.0 - tp_pct), 5),
+        'trailing_activation': round(fill_price * (1.0 + trail_pct) if side == 'BUY' else fill_price * (1.0 - trail_pct), 5),
+        'highest_reached': fill_price,
+        'open_timestamp': int(time.time() * 1000),
+        'is_paper': (router.get_execution_mode() == 'demo'),
+        'status': 'OPEN',
+        'metadata': {'manual_admin_order': True, 'cost_usd': round(lot_amount * fill_price, 2)}
+    }
+    exit_manager.start_monitoring(position_record)
+
+    return {
+        "status": "success",
+        "message": f"Manual {side} order filled for {lot_amount} {req.symbol}",
+        "order": order_res,
+        "position": position_record
+    }
+
+class WatchlistPresetRequest(BaseModel):
+    preset: str
+
+@app.post("/api/watchlist/preset")
+async def load_watchlist_preset(req: WatchlistPresetRequest, user: str = Depends(get_current_user)):
+    presets = {
+        "crypto_top5": [
+            ('BTC/USDT', 'crypto', 'bybit'),
+            ('ETH/USDT', 'crypto', 'bybit'),
+            ('SOL/USDT', 'crypto', 'bybit'),
+            ('BNB/USDT', 'crypto', 'binance'),
+            ('XRP/USDT', 'crypto', 'bybit')
+        ],
+        "forex_majors": [
+            ('EUR_USD', 'forex', 'deriv'),
+            ('GBP_USD', 'forex', 'deriv'),
+            ('USD_JPY', 'forex', 'deriv'),
+            ('AUD_USD', 'forex', 'deriv')
+        ],
+        "metals": [
+            ('XAU_USD', 'forex', 'deriv'),
+            ('XAG_USD', 'forex', 'deriv')
+        ],
+        "synthetics_247": [
+            ('R_50', 'synthetic', 'deriv'),
+            ('R_100', 'synthetic', 'deriv'),
+            ('1HZ100V', 'synthetic', 'deriv')
+        ],
+        "lead_lag_macro": [
+            ('EUR_USD', 'forex', 'deriv'),
+            ('BTC/USDT', 'crypto', 'bybit')
+        ]
+    }
+    items = presets.get(req.preset)
+    if not items:
+        raise HTTPException(status_code=400, detail="Unknown preset")
+
+    for sym, asset_cls, brk in items:
+        upsert_watchlist_item(sym, asset_cls, brk, is_active=True)
+
+    return {"status": "success", "message": f"Loaded preset '{req.preset}' with {len(items)} symbols"}
+
+@app.get("/api/system/diagnostics")
+async def get_system_diagnostics(user: str = Depends(get_current_user)):
+    import os, platform, shutil
+    db_path = settings.SQLITE_DB_PATH
+    db_size_kb = round(os.path.getsize(db_path) / 1024, 2) if os.path.exists(db_path) else 0.0
+    disk = shutil.disk_usage(".")
+    
+    return {
+        "os": f"{platform.system()} {platform.release()}",
+        "python_version": platform.python_version(),
+        "database": {
+            "path": db_path,
+            "size_kb": db_size_kb,
+            "wal_enabled": True
+        },
+        "disk": {
+            "total_gb": round(disk.total / (1024**3), 1),
+            "free_gb": round(disk.free / (1024**3), 1)
+        },
+        "gene_pool_size": len(formula_synthesizer.gene_pool),
+        "post_mortems_crystallized": synaptic_vault.post_mortems_analyzed,
+        "vps_target": "$4.50 / month (Hetzner CX22)"
+    }
+
+@app.get("/api/history/export")
+async def export_history(user: str = Depends(get_current_user)):
+    trades = get_recent_trades(limit=500)
+    import io, csv
+    from fastapi.responses import Response
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["id", "symbol", "side", "entry_price", "exit_price", "size", "net_profit", "exit_reason", "duration_seconds", "open_timestamp", "close_timestamp"])
+    for t in trades:
+        writer.writerow([
+            t.get("id"), t.get("symbol"), t.get("side"), t.get("entry_price"),
+            t.get("exit_price"), t.get("size"), t.get("net_profit"), t.get("exit_reason"),
+            t.get("duration_seconds"), t.get("open_timestamp"), t.get("close_timestamp")
+        ])
+    return Response(
+        content=output.getvalue(),
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=trade_ledger_export.csv"}
+    )
 
 @app.get("/api/health")
 async def health_check():

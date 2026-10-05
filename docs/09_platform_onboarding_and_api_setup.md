@@ -75,27 +75,118 @@ Bybit is the primary recommended exchange for the QuantumBit bot because it perm
 
 ---
 
-## 4. Platform 3: OANDA v20 Setup (Forex & Commodities)
+---
 
-OANDA provides institutional-grade liquidity for EUR/USD, GBP/USD, USD/JPY, and Gold (XAU/USD).
+## 4. Regional Strategic Advisory: OANDA vs Native Alternatives
+
+> [!CAUTION]
+> **Why Bypassing OANDA via VPN or Foreign Address is NOT Recommended**:
+> 1. **Strict Geofencing & Account Freezes**: OANDA strictly enforces international regulatory compliance (FCA, NFA, ASIC, CySEC, FATCA). If an account is opened using VPNs, foreign virtual addresses, or nominee documents from an unsupported country like Nigeria, deposits and withdrawals will get blocked the moment the system detects mismatching Nigerian bank accounts or Hetzner data center IPs.
+> 2. **Financial Confiscation Risk**: During periodic automated re-KYC audits, accounts registered under false jurisdiction are frozen indefinitely, and trading profits are subject to forfeiture.
+> 3. **Retail Dealing-Desk Spreads**: OANDA is a retail market-maker (B-book on smaller tiers) charging floating spreads (typically 1.2 to 1.8 pips on EUR/USD retail). It is **not** the best forex venue for quantitative algorithmic scalping.
+
+### The Recommended 2 Crypto + 2 Forex/Multi-Asset Fleet
+
+To ensure maximum liquidity, true regulatory safety, and zero withdrawal friction, QuantumBit BHR is architected with a **2 Crypto + 2 Forex/Multi-Asset** balanced quartet:
+
+| Role | Venue | Primary Strength | Account Opening (Nigeria) | Minimum Deposit |
+|---|---|---|---|---|
+| **Crypto 1** | **Bybit** | Maker-First micro-orders, spot & derivatives | 100% Accepted (NIN / Passport) | $5.00 |
+| **Crypto 2** | **Binance** | Global deepest liquidity, 0.075% BNB fee | 100% Accepted (NIN / Passport) | $5.00 |
+| **Forex 1** | **Deriv API** | Pure WebSocket, micro-lots, 24/7 weekend synthetics | 100% Accepted (Instant NIN verification) | **$5.00 - $10.00** |
+| **Forex 2** | **Interactive Brokers** | Institutional Tier-1 DMA, raw 0.1 pip spreads | 100% Accepted (Passport / NIN + Bank Statement) | $50.00 - $100.00+ |
+
+---
+
+## 5. Platform 3: Deriv API Setup (Forex, Metals & 24/7 Synthetics)
+
+Deriv is the **optimal venue for $50 micro-capital deployment**:
+- Pure cloud WebSocket API (`wss://ws.derivws.com/websockets/v3`) requiring **zero local desktop software or Wine emulation** on Ubuntu Hetzner VPS.
+- Full access to Major Forex (`frxEURUSD`, `frxGBPUSD`, `frxUSDJPY`), Metals (`frxXAUUSD` Gold), and **24/7 Volatility Indices** (`R_50`, `R_100`, `1HZ100V`) that allow the bot to harvest profits all weekend when traditional forex markets are closed!
 
 ### Step 1: Open an Account
-1. Visit [oanda.com](https://www.oanda.com).
-2. Choose your region (US, UK, Europe, or Global) and register.
-3. Create either a **Practice Account** (virtual $50,000 demo) or a **Live Account**.
+1. Visit [deriv.com](https://deriv.com).
+2. Sign up using your email or Google account.
+3. Select a **Demo Account** (virtual $10,000) or create a **Real Fiat (USD) Account**.
 
-### Step 2: Retrieve Account ID
-1. Log in to the OANDA Web Trading Hub or Portal.
-2. Locate your **Account ID** (formatted like `101-004-12345678-001` or an 8-digit numeric integer).
+### Step 2: Complete KYC Verification
+1. Navigate to **Account Settings -> Proof of Identity**.
+2. Upload your Nigerian National Identity Number (NIN slip or card), Voter's Card, or International Passport.
+3. Verification is typically approved within 15–60 minutes.
 
-### Step 3: Generate Personal Access Token
-1. Go to **Manage API Access** (or **My Account -> Developer API**).
-2. Click **Generate** to create a Personal Access Token.
-3. Copy the token into `.env`:
+### Step 3: Fund Your Account
+Deriv offers localized Nigerian payment rails:
+1. Go to **Cashier -> Deposit**.
+2. Choose from:
+   - **Local Nigerian Bank Transfer** (instant NGN $\to$ USD conversion).
+   - **Credit/Debit Card** (instant).
+   - **Cryptocurrency** (USDT TRC20 or BEP20, Bitcoin, Ethereum with zero fees).
+   - **Payment Agents / Deriv P2P** (local peer-to-peer exchange).
+3. Deposit as little as **$10 to $50** to begin trading.
+
+### Step 4: Generate API Token
+1. Log into your Deriv dashboard.
+2. Go to **Account Settings -> API Token** (or visit [api.deriv.com](https://api.deriv.com)).
+3. Under **Create new token**:
+   - Token Name: `QuantumBit_BHR_Engine`
+   - Select Scopes: Check **`Read`** and **`Trade`** (and optionally **`Payments`** for automated treasury sweep).
+4. Click **Create**.
+5. Copy the generated token string into `.env`:
+   ```ini
+   DERIV_API_TOKEN=your_deriv_api_token_here
+   DERIV_APP_ID=1089
+   DERIV_ENDPOINT=wss://ws.derivws.com/websockets/v3
+   ```
+
+---
+
+## 6. Platform 4: Interactive Brokers (IBKR Institutional DMA Setup)
+
+Interactive Brokers (NASDAQ: `IBKR`) is the institutional gold standard for quantitative trading, offering direct market access (DMA) and raw ECN spreads (down to 0.1 pips on EUR/USD).
+
+### Step 1: Open an Account
+1. Visit [interactivebrokers.com](https://www.interactivebrokers.com).
+2. Click **Open Account -> Start Application**.
+3. Select **Individual Account**.
+4. When prompted for Country of Legal Residence, select **Nigeria**.
+
+### Step 2: Submit Verification Documents
+IBKR officially accepts Nigerian residents:
+1. **Proof of Identity**: Nigerian International Passport, National Identity Card (NIN), or Driver's License.
+2. **Proof of Address**: Bank statement from any licensed Nigerian commercial bank (GTBank, Access Bank, Zenith Bank, First Bank, etc.) dated within the last 3 months with your matching physical address.
+
+### Step 3: Hetzner Headless IB Gateway (Docker Setup)
+Because IBKR communicates via native TCP sockets rather than pure web tokens, run the headless IB Gateway container on your Hetzner VPS:
+1. In your Hetzner Ubuntu server, pull the audited Docker IB Gateway:
+   ```bash
+   docker run -d \
+     --name ib-gateway \
+     --restart always \
+     -p 4002:4002 \
+     -e TWS_USERID="your_ibkr_username" \
+     -e TWS_PASSWORD="your_ibkr_password" \
+     -e TRADING_MODE="paper" \
+     ghcr.io/gnzsnz/ib-gateway:latest
+   ```
+2. In your trading bot's `.env`, configure:
+   ```ini
+   IBKR_HOST=127.0.0.1
+   IBKR_PORT=4002   # 4002 for Paper, 4001 for Live
+   IBKR_CLIENT_ID=1
+   IBKR_ACCOUNT=your_ibkr_account_id
+   ```
+
+---
+
+## 7. Platform 5: Legacy OANDA v20 (Optional / Historical Reference)
+
+For users residing in supported jurisdictions (US, UK, EU, Canada, Australia):
+1. Retrieve API Token from OANDA Developer portal.
+2. Configure `.env`:
    ```ini
    OANDA_API_KEY=your_oanda_personal_access_token
    OANDA_ACCOUNT_ID=your_oanda_account_id
-   OANDA_ENVIRONMENT=practice   # Switch to 'trade' for live forex
+   OANDA_ENVIRONMENT=practice   # Switch to 'trade' for live
    ```
 
 ---

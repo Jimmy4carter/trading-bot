@@ -172,12 +172,41 @@ Provides real-time diagnostic telemetry for the five Frontier Neural Physics par
 }
 ```
 
+#### `GET /api/brokers/status`
+Returns real-time connectivity status, ping latency (ms), configured credentials status, and capabilities for all 5 brokers (Bybit, Binance, Deriv API, Interactive Brokers, and OANDA).
+
+#### `POST /api/manual_trade`
+Allows the administrator to manually fire a test buy or sell order directly on any connected broker. Automatically normalizes amount, executes via the Smart Router, records the position, and spawns the tick-by-tick Exit Manager.
+- **Request Body**:
+  ```json
+  {
+    "broker": "deriv",
+    "symbol": "EUR_USD",
+    "side": "BUY",
+    "amount_usd": 10.0
+  }
+  ```
+
+#### `POST /api/watchlist/preset`
+Injects pre-curated trading universes in a single atomic transaction.
+- Supported Presets: `crypto_top5`, `forex_majors`, `metals`, `synthetics_247`, `lead_lag_macro`.
+
+#### `GET /api/system/diagnostics`
+Returns real-time operating system metrics, SQLite database file size and WAL status, total disk capacity, evolved formula count, and Hetzner VPS targets.
+
+#### `GET /api/history/export`
+Generates and downloads a complete cryptographic trade ledger in standard CSV format, containing timestamps, fills, slippage, realized PnL, duration, and exit reasons.
+
 ---
 
-## 3. Web Dashboard Design System
+## 3. Web Dashboard Design System & Interactive Controls
 
 The web dashboard is implemented in vanilla HTML5, CSS3, and JavaScript without external runtime dependencies (React, Vue, or heavy node bundles), ensuring zero build overhead and fast asset loading on budget VPS links:
 - **Glassmorphism Theme**: Translucent dark surfaces with subtle backdrop blurs (`backdrop-filter: blur(16px)`).
-- **Responsive Telemetry Polling**: Polls `/api/status`, `/api/positions`, and `/api/frontier` every 3 seconds when authenticated.
-- **Frontier Physics Visualizer**: Dedicated diagnostic panel highlighting live entropy state, HDC memory bank capacity, and cellular glider status.
+- **Multi-Broker Fleet Hub**: Interactive broker cards showing connection state, latency (ms), supported execution features, and 1-click primary router activation.
+- **Manual Test Execution & Order Sandbox**: Integrated terminal allowing immediate order testing across any connected broker (Bybit, Binance, Deriv, IBKR) with instant fill receipts.
+- **Advanced Risk & Scalp Controller**: Real-time sliders for Take Profit (0.5%–5%), Hard Stop Loss (0.2%–3%), Trailing Stop Activation (0.3%–2.5%), VPS Cloud Treasury Sweep Rate (5%–30%), and Maker-First Post-Only Routing toggle.
+- **Watchlist Universe Presets**: Quick-injection chips for Crypto Top 5, Forex Majors (Deriv), Precious Metals, 24/7 Synthetics, and Macro Lead-Lag.
+- **Immutable Ledger Audit & Export**: Live symbol search filter plus instant one-click CSV export for spreadsheet reconciliation.
+- **Responsive Telemetry Polling**: Polls `/api/status`, `/api/brokers/status`, `/api/positions`, and `/api/frontier` every 3.5 seconds when authenticated.
 - **Safety Interlocks**: Live mode toggle and emergency kill switches require explicit double-confirmation before execution.

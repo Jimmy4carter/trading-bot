@@ -10,6 +10,8 @@ from typing import Dict, Any, Optional
 from .base import BaseBroker
 from .crypto_ccxt import CCXTCryptoBroker
 from .forex_oanda import OandaForexBroker
+from .forex_deriv import DerivForexBroker
+from .forex_ibkr import InteractiveBrokersAdapter
 from .paper_simulator import PaperTradingSimulator
 from config.settings import settings
 from core.database import get_system_config
@@ -22,6 +24,8 @@ class OmniBrokerRouter:
         self.live_brokers: Dict[str, BaseBroker] = {
             'bybit': CCXTCryptoBroker('bybit'),
             'binance': CCXTCryptoBroker('binance'),
+            'deriv': DerivForexBroker(),
+            'ibkr': InteractiveBrokersAdapter(),
             'oanda': OandaForexBroker()
         }
 
@@ -65,9 +69,13 @@ class OmniBrokerRouter:
         if preferred_broker:
             return self.get_broker(preferred_broker)
 
-        # Forex heuristic: contains '_' or common forex pair format
+        # Deriv 24/7 Synthetics
+        if any(symbol.startswith(prefix) for prefix in ['R_', '1HZ', 'BOOM', 'CRASH', 'STEP', 'JUMP']):
+            return self.get_broker('deriv')
+
+        # Forex & Metals heuristic: route to Deriv (micro-capital & 24/7 friendly)
         if '_' in symbol or any(pair in symbol for pair in ['EUR', 'GBP', 'USD', 'JPY', 'AUD', 'CAD', 'CHF', 'XAU']) and 'USDT' not in symbol:
-            return self.get_broker('oanda')
+            return self.get_broker('deriv')
 
         return self.get_broker()
 
@@ -78,6 +86,8 @@ __all__ = [
     "BaseBroker",
     "CCXTCryptoBroker",
     "OandaForexBroker",
+    "DerivForexBroker",
+    "InteractiveBrokersAdapter",
     "PaperTradingSimulator",
     "OmniBrokerRouter",
     "router"

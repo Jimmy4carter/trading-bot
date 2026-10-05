@@ -134,14 +134,19 @@ def init_db():
                 ('BTC/USDT', 'crypto', 'bybit', 1, 5.0, 0.0001, 0.1),
                 ('ETH/USDT', 'crypto', 'bybit', 1, 5.0, 0.001, 0.01),
                 ('SOL/USDT', 'crypto', 'bybit', 1, 5.0, 0.01, 0.01),
-                ('EUR_USD', 'forex', 'oanda', 1, 1.0, 1.0, 0.00001),
-                ('GBP_USD', 'forex', 'oanda', 1, 1.0, 1.0, 0.00001),
+                ('EUR_USD', 'forex', 'deriv', 1, 1.0, 1.0, 0.00001),
+                ('GBP_USD', 'forex', 'deriv', 1, 1.0, 1.0, 0.00001),
+                ('XAU_USD', 'forex', 'deriv', 1, 1.0, 0.01, 0.01),
+                ('R_50', 'synthetic', 'deriv', 1, 1.0, 0.1, 0.01),
             ]
             cursor.executemany("""
                 INSERT OR IGNORE INTO watchlist 
                 (symbol, asset_class, broker, is_active, min_notional, amount_step, price_tick)
                 VALUES (?, ?, ?, ?, ?, ?, ?)
             """, default_pairs)
+
+        # Migrate existing OANDA watchlist items to Deriv
+        cursor.execute("UPDATE watchlist SET broker = 'deriv' WHERE broker = 'oanda'")
 
         logger.info("SQLite database tables initialized successfully.")
 

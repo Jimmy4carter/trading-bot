@@ -1,15 +1,15 @@
 {
   "version": "2.0-synaptic",
-  "last_saved": "2026-10-02 21:42:03",
-  "ai_level": 2,
-  "ai_iq": 144.2,
-  "total_experience_points": 315,
-  "total_epochs": 4,
+  "last_saved": "2026-10-05 18:45:06",
+  "ai_level": 8,
+  "ai_iq": 170.6,
+  "total_experience_points": 4999,
+  "total_epochs": 55,
   "post_mortems_analyzed": 0,
-  "current_regime": "CHOP_ACCUMULATION",
+  "current_regime": "BULL_TREND",
   "regime_transitions": {
     "BULL_TREND": {
-      "BULL_TREND": 1,
+      "BULL_TREND": 11,
       "BEAR_TREND": 1,
       "CHOP_ACCUMULATION": 1,
       "HIGH_VOL_EXPLOSION": 1,
@@ -23,7 +23,7 @@
       "LIQUIDITY_CAVITATION": 1
     },
     "CHOP_ACCUMULATION": {
-      "BULL_TREND": 1,
+      "BULL_TREND": 3,
       "BEAR_TREND": 1,
       "CHOP_ACCUMULATION": 1,
       "HIGH_VOL_EXPLOSION": 1,

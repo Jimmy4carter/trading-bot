@@ -135,6 +135,19 @@
                 <button class="btn btn-secondary" onclick="resetVPSTreasury()" style="padding: 4px 10px; font-size: 11px; border-color: rgba(245, 158, 11, 0.3); color: #fbbf24;">
                     💳 Reset Monthly VPS
                 </button>
+        </section>
+
+        <!-- Multi-Broker Fleet & Connectivity Hub -->
+        <section class="panel glass-panel" style="margin-bottom: 20px; border: 1px solid rgba(56, 189, 248, 0.25);">
+            <div class="panel-header">
+                <div>
+                    <h3 style="color: #38bdf8;">Multi-Broker Fleet & Liquidity Hub</h3>
+                    <span class="brand-subtitle">2 Crypto + 2 Forex/Synthetics Institutional Quartet • Direct Market Access</span>
+                </div>
+                <span class="badge" id="fleetActiveCountBadge" style="background: rgba(56, 189, 248, 0.2); color: #38bdf8;">Fleet Online</span>
+            </div>
+            <div id="brokerFleetGrid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px;">
+                <!-- Populated dynamically by fetchBrokerFleet() -->
             </div>
         </section>
 
@@ -302,6 +315,47 @@
             </div>
         </section>
 
+        <!-- Manual Trade Sandbox & Immediate Test Order Bar -->
+        <section class="panel glass-panel" style="margin-bottom: 24px; border: 1px solid rgba(245, 158, 11, 0.35); background: rgba(22, 18, 12, 0.65);">
+            <div class="panel-header">
+                <div>
+                    <h3 style="color: #fbbf24;">Manual Test Execution & Order Sandbox</h3>
+                    <span class="brand-subtitle">Simulate or Execute Live Test Orders Instantly Across Any Connected Broker Fleet Member</span>
+                </div>
+                <span class="badge" style="background: rgba(245, 158, 11, 0.2); color: #fbbf24;">Instant Routing</span>
+            </div>
+            <div style="display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap;">
+                <div class="form-group" style="flex: 1; min-width: 140px;">
+                    <label for="manualBrokerSelect" style="color: #cbd5e1; font-size: 11px;">Target Broker</label>
+                    <select id="manualBrokerSelect">
+                        <option value="bybit">Bybit (Crypto)</option>
+                        <option value="binance">Binance (Crypto)</option>
+                        <option value="deriv">Deriv API (Forex/Synthetics)</option>
+                        <option value="ibkr">Interactive Brokers (DMA)</option>
+                    </select>
+                </div>
+                <div class="form-group" style="flex: 1.2; min-width: 140px;">
+                    <label for="manualSymbolInput" style="color: #cbd5e1; font-size: 11px;">Symbol</label>
+                    <input type="text" id="manualSymbolInput" placeholder="BTC/USDT, EUR_USD, R_50" value="BTC/USDT">
+                </div>
+                <div class="form-group" style="flex: 0.8; min-width: 110px;">
+                    <label for="manualSideSelect" style="color: #cbd5e1; font-size: 11px;">Side</label>
+                    <select id="manualSideSelect">
+                        <option value="BUY">BUY (Long)</option>
+                        <option value="SELL">SELL (Short)</option>
+                    </select>
+                </div>
+                <div class="form-group" style="flex: 0.8; min-width: 110px;">
+                    <label for="manualAmountInput" style="color: #cbd5e1; font-size: 11px;">Size ($ USD)</label>
+                    <input type="number" id="manualAmountInput" value="10.0" min="1" max="100" step="1">
+                </div>
+                <button class="btn btn-primary" onclick="handleManualTrade()" style="height: 38px; padding: 0 18px; background: linear-gradient(135deg, #d97706, #f59e0b); font-weight: 600; font-size: 12px;">
+                    ⚡ Fire Test Order
+                </button>
+            </div>
+            <div id="manualTradeFeedback" style="margin-top: 10px; font-size: 12px; color: #34d399; font-family: var(--font-mono); display: none;"></div>
+        </section>
+
         <!-- Command & Control Matrix -->
         <section class="control-grid">
 
@@ -327,12 +381,14 @@
                             <select id="activeBrokerSelect" onchange="updateSettings()">
                                 <option value="bybit">Bybit (Spot / Micro-Orders)</option>
                                 <option value="binance">Binance (Deep Liquidity)</option>
-                                <option value="oanda">OANDA (Forex & Metals)</option>
+                                <option value="deriv">Deriv API (Forex & Synthetics)</option>
+                                <option value="ibkr">Interactive Brokers (DMA)</option>
+                                <option value="oanda">OANDA (Legacy Forex)</option>
                             </select>
                         </div>
                     </div>
 
-                    <!-- Sliders -->
+                    <!-- Core Sliders -->
                     <div class="slider-group">
                         <div class="slider-header">
                             <label for="maxConcurrentRange">Max Concurrent Positions</label>
@@ -357,6 +413,51 @@
                         <input type="range" id="confidenceRange" min="50" max="95" step="5" value="65" oninput="updateSliderVal('confidenceRange', 'confidenceVal', '', '%')" onchange="updateSettings()">
                     </div>
 
+                    <!-- Advanced Risk & Scalping Controls -->
+                    <div style="margin-top: 14px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.08);">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                            <span style="font-size: 12px; font-weight: 600; color: #a5b4fc; text-transform: uppercase; letter-spacing: 0.5px;">Advanced Risk & Scalp Geometries</span>
+                            <span class="badge" style="font-size: 10px; color: #818cf8;">Live Tuned</span>
+                        </div>
+
+                        <div class="slider-group">
+                            <div class="slider-header">
+                                <label for="takeProfitRange">Take Profit Target</label>
+                                <span id="takeProfitVal" class="slider-badge">1.5%</span>
+                            </div>
+                            <input type="range" id="takeProfitRange" min="0.5" max="5.0" step="0.1" value="1.5" oninput="updateSliderVal('takeProfitRange', 'takeProfitVal', '', '%')" onchange="updateSettings()">
+                        </div>
+
+                        <div class="slider-group">
+                            <div class="slider-header">
+                                <label for="stopLossRange">Hard Stop Loss Guard</label>
+                                <span id="stopLossVal" class="slider-badge">0.6%</span>
+                            </div>
+                            <input type="range" id="stopLossRange" min="0.2" max="3.0" step="0.1" value="0.6" oninput="updateSliderVal('stopLossRange', 'stopLossVal', '', '%')" onchange="updateSettings()">
+                        </div>
+
+                        <div class="slider-group">
+                            <div class="slider-header">
+                                <label for="trailingRange">Trailing Stop Activation</label>
+                                <span id="trailingVal" class="slider-badge">0.8%</span>
+                            </div>
+                            <input type="range" id="trailingRange" min="0.3" max="2.5" step="0.1" value="0.8" oninput="updateSliderVal('trailingRange', 'trailingVal', '', '%')" onchange="updateSettings()">
+                        </div>
+
+                        <div class="slider-group">
+                            <div class="slider-header">
+                                <label for="vpsSweepRange">VPS Cloud Treasury Sweep Rate</label>
+                                <span id="vpsSweepVal" class="slider-badge">15%</span>
+                            </div>
+                            <input type="range" id="vpsSweepRange" min="5" max="30" step="1" value="15" oninput="updateSliderVal('vpsSweepRange', 'vpsSweepVal', '', '% of profit')" onchange="updateSettings()">
+                        </div>
+
+                        <div style="display: flex; align-items: center; gap: 8px; margin-top: 10px; margin-bottom: 12px; font-size: 12px; color: #cbd5e1;">
+                            <input type="checkbox" id="makerFirstCheckbox" checked onchange="updateSettings()" style="width: 16px; height: 16px; accent-color: #6366f1; cursor: pointer;">
+                            <label for="makerFirstCheckbox" style="cursor: pointer;">Maker-First Post-Only Routing (Slashes 75% fee drag)</label>
+                        </div>
+                    </div>
+
                     <!-- Quick Actions -->
                     <div class="button-row">
                         <button id="bootstrapBtn" class="btn-secondary" onclick="triggerBootstrap()">🚀 Re-Seed Historical DNA</button>
@@ -372,15 +473,29 @@
                     <span class="badge" id="watchlistCount">5 Pairs</span>
                 </div>
 
+                <!-- Quick Universe Presets -->
+                <div style="display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap; align-items: center;">
+                    <span style="font-size: 11px; color: #94a3b8;">Quick Universe:</span>
+                    <button class="btn-preset" onclick="loadPreset('crypto_top5')">🚀 Crypto Top 5</button>
+                    <button class="btn-preset" onclick="loadPreset('forex_majors')">💱 Forex Majors (Deriv)</button>
+                    <button class="btn-preset" onclick="loadPreset('metals')">🥇 Metals</button>
+                    <button class="btn-preset" onclick="loadPreset('synthetics_247')">⚡ 24/7 Synthetics</button>
+                    <button class="btn-preset" onclick="loadPreset('lead_lag_macro')">🌐 Macro Lead-Lag</button>
+                </div>
+
                 <div class="add-pair-box">
-                    <input type="text" id="newSymbolInput" placeholder="Symbol (e.g. SOL/USDT, XAU_USD)">
+                    <input type="text" id="newSymbolInput" placeholder="Symbol (e.g. SOL/USDT, EUR_USD, R_50)">
                     <select id="newClassSelect">
                         <option value="crypto">Crypto</option>
                         <option value="forex">Forex</option>
+                        <option value="synthetic">Synthetic 24/7</option>
+                        <option value="metal">Precious Metal</option>
                     </select>
                     <select id="newBrokerSelect">
                         <option value="bybit">Bybit</option>
                         <option value="binance">Binance</option>
+                        <option value="deriv">Deriv API</option>
+                        <option value="ibkr">Interactive Brokers</option>
                         <option value="oanda">OANDA</option>
                     </select>
                     <button id="addPairBtn" class="btn-primary" onclick="handleAddPair()">Inject Pair</button>
@@ -437,8 +552,14 @@
         <!-- Trade Audit Ledger Section -->
         <section class="panel glass-panel table-panel">
             <div class="panel-header">
-                <h3>Immutable Trade Ledger (SQLite WAL)</h3>
-                <span class="badge">Closed Trades</span>
+                <div>
+                    <h3>Immutable Trade Ledger (SQLite WAL)</h3>
+                    <span class="brand-subtitle">Cryptographic accounting • Realized PnL & slippage audit</span>
+                </div>
+                <div style="display: flex; gap: 8px; align-items: center;">
+                    <input type="text" id="historyFilterInput" placeholder="Filter symbol..." oninput="filterHistory()" style="padding: 4px 8px; font-size: 11px; border-radius: 4px; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1); color: #fff; width: 120px;">
+                    <button class="btn btn-secondary" onclick="exportLedgerCsv()" style="padding: 4px 10px; font-size: 11px; border-color: rgba(56, 189, 248, 0.3); color: #38bdf8;">📥 Export CSV</button>
+                </div>
             </div>
             <div class="table-container">
                 <table class="data-table" id="historyTable">
@@ -458,6 +579,19 @@
                         <!-- Populated dynamically -->
                     </tbody>
                 </table>
+            </div>
+        </section>
+
+        <!-- System Telemetry & Hetzner Diagnostics Footer Bar -->
+        <section class="panel glass-panel" style="margin-top: 20px; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; background: rgba(10, 14, 23, 0.7); font-size: 11px; color: #94a3b8; border: 1px solid rgba(255, 255, 255, 0.06); flex-wrap: wrap; gap: 12px;">
+            <div style="display: flex; gap: 16px; align-items: center; flex-wrap: wrap;">
+                <span>🖥️ Host OS: <strong id="diagOsText" style="color: #cbd5e1;">Detecting...</strong></span>
+                <span>🗄️ Ledger DB: <strong id="diagDbText" style="color: #38bdf8;">trading_ledger.db</strong></span>
+                <span>🧬 Evolved Alpha Genes: <strong id="diagGeneText" style="color: #a855f7;">5 Online</strong></span>
+                <span>🎯 Hetzner VPS Target: <strong id="diagVpsText" style="color: #fbbf24;">$4.50 / mo CX22</strong></span>
+            </div>
+            <div style="display: flex; gap: 8px; align-items: center;">
+                <span class="badge" style="background: rgba(16, 185, 129, 0.2); color: #34d399;">DAEMON 100% HEALTHY</span>
             </div>
         </section>
     </main>

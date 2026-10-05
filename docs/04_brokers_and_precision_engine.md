@@ -28,11 +28,26 @@ class BaseBroker(ABC):
 - **Rate-Limiting**: Built-in CCXT token bucket rate limiter (`enableRateLimit: True`, 15,000 ms network timeout).
 - **Lazy Market Rules**: Market limits and rules are loaded on demand to prevent blocking server boot during network delays.
 
-### B. OANDA v20 Forex Connector (`brokers/forex_oanda.py`)
+### B. Deriv API Multi-Asset Connector (`brokers/forex_deriv.py`)
+- **Direct Cloud WebSocket Architecture**: Connects to Deriv WebSocket API v3 (`wss://ws.derivws.com/websockets/v3?app_id=...`). Requires zero local gateway or Wine emulation on Ubuntu Hetzner VPS.
+- **Asset Coverage**: 
+  - Standard Forex Majors (`EUR_USD` $\to$ `frxEURUSD`, `GBP_USD` $\to$ `frxGBPUSD`, `USD_JPY` $\to$ `frxUSDJPY`).
+  - Precious Metals (`XAU_USD` $\to$ `frxXAUUSD` Gold).
+  - 24/7 Synthetic Volatility Indices (`R_10`, `R_25`, `R_50`, `R_75`, `R_100`, `1HZ100V`).
+- **24/7 Weekend Trading**: While traditional forex markets close on Friday evening, Deriv Synthetic Volatility Indices trade continuously 24 hours a day, 7 days a week, allowing the bot's genetic algorithms to harvest compounding alpha all weekend.
+- **Micro-Capital Friendly**: Accounts can be funded with as low as $5–$10 via local Nigerian bank transfers, card, USDT (TRC20/BEP20), or payment agents. Micro-lot contracts are fully supported.
+- **Cost Structure**: Zero commissions; ultra-tight spread-embedded execution.
+
+### C. Interactive Brokers (IBKR) Institutional DMA (`brokers/forex_ibkr.py`)
+- **Institutional ECN Liquidity**: NASDAQ-listed (IBKR) Tier-1 prime brokerage access.
+- **Raw Spread Execution**: Top-of-book raw spreads as narrow as 0.1 to 0.2 pips on EUR/USD.
+- **Hetzner Headless Gateway**: Deploys seamlessly via Docker container (`ghcr.io/gnzsnz/ib-gateway:latest`) communicating locally over native TCP socket port `4002` (paper) or `4001` (live).
+- **Scale**: Perfect growth vehicle as portfolio equity compounds from $50 into thousands of dollars.
+
+### D. OANDA v20 Forex Connector (`brokers/forex_oanda.py` - Legacy/Alternative)
 - **Direct REST API**: Uses OANDA v20 REST endpoints (`/v3/instruments/{instrument}/candles`, `/v3/accounts/{account_id}/pricing`, `/v3/accounts/{account_id}/orders`).
-- **Environments**: Supports both `practice` (fxpractice sandbox) and `trade` (live execution).
-- **Instrument Normalization**: Converts standard conventions (`EUR/USD`, `EUR-USD`) to OANDA v20 notation (`EUR_USD`).
-- **Micro-Unit Sizing**: OANDA allows integer unit sizing (1 unit = 0.00001 standard lots), enabling exact dollar allocations on small capital.
+- **Environments**: Supports both `practice` (sandbox) and `trade` (live execution).
+- **Regional Note**: Retained for backward compatibility. Unsupported in several regions including Nigeria; users in those regions are routed to Deriv API or IBKR.
 
 ---
 
